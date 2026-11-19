@@ -1531,7 +1531,6 @@
       available:tr('updates.github.available'),
       current:tr('updates.github.current'),
       no_release:tr('updates.github.no_release'),
-      missing_assets:tr('updates.github.missing_assets'),
       not_newer:tr('updates.github.not_newer'),
       unknown_version:tr('updates.github.unknown_version'),
     };
@@ -1561,7 +1560,7 @@
       if (!candidate || candidate.address !== address.value.trim()) return;
       check.disabled = true; download.disabled = true; address.disabled = true;
       try {
-        await request('/upgrade/download', {address:candidate.address, release:candidate.release, artifact_sha256:candidate.artifact_sha256});
+        await request('/upgrade/download', {address:candidate.address, release:candidate.release});
         await load();
         message(tr('updates.stage_success'), notice);
         notice.dataset.state = 'success';
@@ -1589,7 +1588,7 @@
       ...(data.git_baseline && data.git_baseline !== data.release ? [[tr('operations.render_upgrade.code_baseline'), data.git_baseline]] : []),
       [tr('operations.render_upgrade.release_manifest'), manifestNames[data.manifest.state]],
       [tr('operations.render_upgrade.release_files'), data.manifest.file_count],
-      [tr('operations.render_upgrade.online_upgrade'), data.online_update?.public_key_ready && data.github_repository ? tr('updates.status.configured') : tr('updates.status.not_configured')],
+      [tr('operations.render_upgrade.online_upgrade'), data.github_repository && data.online_update?.staging_writable ? tr('updates.status.configured') : tr('updates.status.not_configured')],
       [tr('operations.render_upgrade.pending_migrations'), data.migrations.pending],
       [tr('operations.render_upgrade.blocked_migrations'), data.migrations.blocked],
     ]));
@@ -1626,8 +1625,6 @@
     advanced.append(node('h3', tr('updates.title'), 'operation-section-title'));
     advanced.append(node('p', tr('updates.description'), 'portal-help'));
     advanced.append(description([
-      [tr('updates.public_key'), online.public_key_ready ? online.public_key_fingerprint : tr('updates.status.not_configured')],
-      [tr('updates.allowed_hosts'), (online.allowed_hosts||[]).join(', ') || tr('updates.status.none')],
       [tr('updates.staging_directory'), online.staging_writable ? tr('updates.status.writable') : tr('updates.status.unavailable')],
       [tr('updates.candidate_directory'), online.candidate_writable!==false ? tr('updates.status.writable') : tr('updates.status.unavailable')],
       [tr('updates.staged_packages'), online.pending_install||0],

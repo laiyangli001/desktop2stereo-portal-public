@@ -140,6 +140,41 @@ final class OnlineUpdate
         return array_replace($this->inspectStaged($target,true),['reused'=>false]);
     }
 
+    public function stageSourceArchive(string $archive,string $release,string $repository,string $tag): array
+    {
+        if(!preg_match('/^[a-f0-9]{40}$/D',$release)||strlen($archive)<2||strlen($archive)>self::MAX_ARTIFACT_BYTES
+            ||!str_starts_with($archive,"\x1f\x8b")
+            ||!preg_match('#^[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}$#D',$repository)
+            ||!preg_match('/^[A-Za-z0-9][A-Za-z0-9._+-]{0,99}$/D',$tag)){
+            throw new RuntimeException('update_artifact_invalid');
+        }
+        $metadata=json_encode([
+            'format'=>'d2s-github-source-v1','release'=>$release,'repository'=>$repository,'tag'=>$tag,
+            'size'=>strlen($archive),'sha256'=>hash('sha256',$archive),'created_at'=>time(),
+        ],JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES);
+        $root=$this->stagingPath();
+        if(!is_dir($root)&&!mkdir($root,0700,true)&&!is_dir($root))throw new RuntimeException('update_staging_unavailable');
+        if(!is_writable($root))throw new RuntimeException('update_staging_unavailable');
+        $target=$root.DIRECTORY_SEPARATOR.$release;
+        if(is_dir($target)){
+            $existing=$this->inspectStaged($target,true);
+            if(!hash_equals((string)$existing['artifact_sha256'],hash('sha256',$archive)))throw new RuntimeException('update_stage_conflict');
+            return array_replace($existing,['reused'=>true]);
+        }
+        $temporary=$root.DIRECTORY_SEPARATOR.'.stage-'.$release.'-'.bin2hex(random_bytes(6));
+        if(!mkdir($temporary,0700,true))throw new RuntimeException('update_staging_unavailable');
+        try{
+            $this->write($temporary.DIRECTORY_SEPARATOR.'source.json',$metadata);
+            $this->write($temporary.DIRECTORY_SEPARATOR.'source.tar.gz',$archive);
+            if(!rename($temporary,$target))throw new RuntimeException('update_staging_unavailable');
+        }catch(\Throwable $error){
+            foreach(glob($temporary.DIRECTORY_SEPARATOR.'*')?:[]as$file)@unlink($file);
+            @rmdir($temporary);
+            throw $error;
+        }
+        return array_replace($this->inspectStaged($target,true),['reused'=>false]);
+    }
+
     public function prepareRelease(string $release,int $now): array
     {
         if(!preg_match('/^[a-f0-9]{40}$/D',$release))throw new RuntimeException('update_prepare_input_invalid');
@@ -159,11 +194,14 @@ final class OnlineUpdate
         $candidateDirectory=$this->normalizeAbsolutePath($candidateDirectory);
         $this->assertCandidatePath($candidateDirectory,$release);
         $preparedPath=$stageDirectory.DIRECTORY_SEPARATOR.'prepared.json';
-        $existing=$this->preparedStatus($preparedPath,$release,$staged['manifest_root_hash']);
+        $isSource=(bool)($staged['source_archive']??false);
+        $existing=$isSource?($staged['prepared']??null):
+            $this->preparedStatus($preparedPath,$release,$staged['manifest_root_hash']);
+        $expectedManifestRoot=$staged['manifest_root_hash']??($existing['root_hash']??null);
         if($existing!==null&&$existing['ready']===true){
             $candidateManifest=ReleaseManifest::verify($candidateDirectory,$candidateDirectory.DIRECTORY_SEPARATOR.'release-manifest.json',$release);
             if(!$candidateManifest['ok']||!is_string($candidateManifest['root_hash'])
-                ||!hash_equals($staged['manifest_root_hash'],$candidateManifest['root_hash'])){
+                ||!is_string($expectedManifestRoot)||!hash_equals($expectedManifestRoot,$candidateManifest['root_hash'])){
                 throw new RuntimeException('update_candidate_invalid');
             }
             return array_replace($existing,['reused'=>true]);
@@ -177,22 +215,35 @@ final class OnlineUpdate
         if(!mkdir($temporary,0700))throw new RuntimeException('update_candidate_unavailable');
         $moved=false;
         try{
-            $metadataRaw=@file_get_contents($stageDirectory.DIRECTORY_SEPARATOR.'metadata.json',false,null,0,self::MAX_METADATA_BYTES+1);
-            if(!is_string($metadataRaw))throw new RuntimeException('update_metadata_invalid');
-            $metadata=$this->decodeMetadata($metadataRaw,$release);
-            $this->extract($stageDirectory.DIRECTORY_SEPARATOR.'artifact.tar.gz',$temporary);
-            $manifestPath=$temporary.DIRECTORY_SEPARATOR.'release-manifest.json';
-            $manifest=ReleaseManifest::verify($temporary,$manifestPath,$release);
-            if(!$manifest['ok'])throw new RuntimeException('update_release_manifest_invalid');
-            if(!is_string($manifest['root_hash'])||!hash_equals($metadata['release_manifest_root_hash'],$manifest['root_hash'])){
-                throw new RuntimeException('update_release_manifest_mismatch');
+            if($isSource){
+                $this->extractSourceArchive($stageDirectory.DIRECTORY_SEPARATOR.'source.tar.gz',$temporary);
+                $this->copyCurrentVendor($temporary);
+                $manifest=ReleaseManifest::build($temporary,$release,$now);
+                $manifestPath=$temporary.DIRECTORY_SEPARATOR.'release-manifest.json';
+                ReleaseManifest::write($manifestPath,$manifest);
+                $migrations=$this->migrationInventory($temporary);
+            }else{
+                $metadataRaw=@file_get_contents($stageDirectory.DIRECTORY_SEPARATOR.'metadata.json',false,null,0,self::MAX_METADATA_BYTES+1);
+                if(!is_string($metadataRaw))throw new RuntimeException('update_metadata_invalid');
+                $metadata=$this->decodeMetadata($metadataRaw,$release);
+                $this->extract($stageDirectory.DIRECTORY_SEPARATOR.'artifact.tar.gz',$temporary);
+                $manifestPath=$temporary.DIRECTORY_SEPARATOR.'release-manifest.json';
+                $manifest=ReleaseManifest::verify($temporary,$manifestPath,$release);
+                if(!$manifest['ok'])throw new RuntimeException('update_release_manifest_invalid');
+                if(!is_string($manifest['root_hash'])||!hash_equals($metadata['release_manifest_root_hash'],$manifest['root_hash'])){
+                    throw new RuntimeException('update_release_manifest_mismatch');
+                }
+                $this->verifyMigrations($temporary,$metadata['migrations']);
+                $migrations=$metadata['migrations'];
             }
-            $this->verifyMigrations($temporary,$metadata['migrations']);
+            $verified=ReleaseManifest::verify($temporary,$manifestPath,$release);
+            if(!$verified['ok'])throw new RuntimeException('update_release_manifest_invalid');
+            $manifest=$verified;
             $phpFiles=$this->lintPhp($temporary);
             $details=[
                 'format'=>'d2s-prepared-update-v1','release'=>$release,'prepared_at'=>$now,
                 'file_count'=>$manifest['file_count'],'root_hash'=>$manifest['root_hash'],
-                'migration_count'=>count($metadata['migrations']),'php_files_linted'=>$phpFiles,
+                'migration_count'=>count($migrations),'php_files_linted'=>$phpFiles,
             ];
             $encoded=json_encode($details,JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES);
             if(!rename($temporary,$candidateDirectory))throw new RuntimeException('update_candidate_unavailable');
@@ -216,11 +267,13 @@ final class OnlineUpdate
         $this->assertCandidatePath($candidate,$release);
         if(!is_dir($candidate)||is_link($candidate))throw new RuntimeException('update_candidate_invalid');
         $verified=ReleaseManifest::verify($candidate,$candidate.DIRECTORY_SEPARATOR.'release-manifest.json',$release);
-        if(!$verified['ok']||!hash_equals($staged['manifest_root_hash'],$verified['root_hash'])){
+        $expectedRoot=$staged['manifest_root_hash']??($staged['prepared']['root_hash']??null);
+        if(!$verified['ok']||!is_string($expectedRoot)||!hash_equals($expectedRoot,$verified['root_hash'])){
             throw new RuntimeException('update_candidate_invalid');
         }
+        $migrations=($staged['source_archive']??false)?$this->migrationInventory($candidate):$staged['migrations'];
         return ['release'=>$release,'root'=>$candidate,'manifest_root_hash'=>$verified['root_hash'],
-            'file_count'=>$verified['file_count'],'migrations'=>$staged['migrations'],
+            'file_count'=>$verified['file_count'],'migrations'=>$migrations,
             'artifact_sha256'=>$staged['artifact_sha256'],'prepared_at'=>(int)($staged['prepared']['prepared_at']??0)];
     }
 
@@ -231,6 +284,49 @@ final class OnlineUpdate
         if($real===false||$base===false||!str_starts_with($real,$base.DIRECTORY_SEPARATOR))throw new RuntimeException('update_stage_path_invalid');
         $release=basename($real);
         if(!preg_match('/^[a-f0-9]{40}$/D',$release))throw new RuntimeException('update_stage_path_invalid');
+        $sourcePath=$real.DIRECTORY_SEPARATOR.'source.json';
+        if(is_file($sourcePath)&&!is_link($sourcePath)){
+            $sourceRaw=@file_get_contents($sourcePath,false,null,0,self::MAX_METADATA_BYTES+1);
+            if(!is_string($sourceRaw)||$sourceRaw===''||strlen($sourceRaw)>self::MAX_METADATA_BYTES){
+                throw new RuntimeException('update_metadata_invalid');
+            }
+            try{$source=json_decode($sourceRaw,true,16,JSON_THROW_ON_ERROR);}catch(\JsonException){
+                throw new RuntimeException('update_metadata_invalid');
+            }
+            if(!is_array($source)||($source['format']??null)!=='d2s-github-source-v1'
+                ||($source['release']??null)!==$release||!is_string($source['repository']??null)
+                ||!preg_match('#^[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}$#D',$source['repository'])
+                ||!is_string($source['tag']??null)||!preg_match('/^[A-Za-z0-9][A-Za-z0-9._+-]{0,99}$/D',$source['tag'])
+                ||!is_int($source['created_at']??null)||!is_int($source['size']??null)
+                ||$source['size']<1||$source['size']>self::MAX_ARTIFACT_BYTES
+                ||!is_string($source['sha256']??null)||!preg_match('/^[a-f0-9]{64}$/D',$source['sha256'])){
+                throw new RuntimeException('update_metadata_invalid');
+            }
+            $archivePath=$real.DIRECTORY_SEPARATOR.'source.tar.gz';
+            if(!is_file($archivePath)||is_link($archivePath))throw new RuntimeException('update_artifact_invalid');
+            if($verify){
+                $size=filesize($archivePath);$hash=hash_file('sha256',$archivePath);
+                $magic=@file_get_contents($archivePath,false,null,0,2);
+                if(!is_int($size)||!is_string($hash)||$size!==$source['size']||!hash_equals($source['sha256'],$hash)
+                    ||$magic!=="\x1f\x8b"){
+                    throw new RuntimeException('update_artifact_hash_invalid');
+                }
+            }
+            $preparedRaw=@file_get_contents($real.DIRECTORY_SEPARATOR.'prepared.json',false,null,0,self::MAX_PREPARED_BYTES+1);
+            $preparedRoot=null;
+            if(is_string($preparedRaw)){
+                try{$preparedData=json_decode($preparedRaw,true,16,JSON_THROW_ON_ERROR);}catch(\JsonException){$preparedData=null;}
+                if(is_array($preparedData)&&is_string($preparedData['root_hash']??null)
+                    &&preg_match('/^[a-f0-9]{64}$/D',$preparedData['root_hash']))$preparedRoot=$preparedData['root_hash'];
+            }
+            $prepared=$preparedRoot===null?null:$this->preparedStatus($real.DIRECTORY_SEPARATOR.'prepared.json',$release,$preparedRoot);
+            return [
+                'release'=>$release,'valid'=>true,'source_archive'=>true,'repository'=>$source['repository'],'tag'=>$source['tag'],
+                'artifact_sha256'=>$source['sha256'],'artifact_size'=>$source['size'],'artifact_format'=>'tar.gz',
+                'manifest_root_hash'=>$preparedRoot,'migrations'=>[],'created_at'=>$source['created_at'],
+                'staged_at'=>(int)@filemtime($archivePath),'verified'=>$verify,'prepared'=>$prepared,
+            ];
+        }
         $metadataRaw=@file_get_contents($real.DIRECTORY_SEPARATOR.'metadata.json',false,null,0,self::MAX_METADATA_BYTES+1);
         $signature=trim((string)@file_get_contents($real.DIRECTORY_SEPARATOR.'metadata.sig',false,null,0,self::MAX_SIGNATURE_BYTES+1));
         if(!is_string($metadataRaw)||$metadataRaw===''||strlen($metadataRaw)>self::MAX_METADATA_BYTES)throw new RuntimeException('update_metadata_invalid');
@@ -378,15 +474,16 @@ final class OnlineUpdate
         ];
     }
 
-    private function extract(string $archivePath,string $destination): void
+    private function extract(string $archivePath,string $destination,bool $sourceArchive=false): void
     {
         if(!is_file($archivePath)||is_link($archivePath))throw new RuntimeException('update_artifact_invalid');
-        $inventory=$this->inspectTar($archivePath);
+        $inventory=$this->inspectTar($archivePath,$sourceArchive);
         try{$archive=new PharData($archivePath);}catch(\Throwable){throw new RuntimeException('update_artifact_invalid');}
         foreach($inventory as$item){
             $path=$item['path'];$size=$item['size'];
-            if(!isset($archive[$path]))throw new RuntimeException('update_artifact_invalid');
-            $entry=$archive[$path];
+            $archivePathInTar=$item['archive_path']??$path;
+            if(!isset($archive[$archivePathInTar]))throw new RuntimeException('update_artifact_invalid');
+            $entry=$archive[$archivePathInTar];
             if($entry->isLink()||!$entry->isFile()||$entry->getSize()!==$size){
                 throw new RuntimeException('update_artifact_invalid');
             }
@@ -404,16 +501,21 @@ final class OnlineUpdate
             if(!is_int($written)||$written!==$size)throw new RuntimeException('update_archive_extract_failed');
             @chmod($absolute,0600);
         }
-        if(!is_file($destination.DIRECTORY_SEPARATOR.'release-manifest.json')){
+        if(!$sourceArchive&&!is_file($destination.DIRECTORY_SEPARATOR.'release-manifest.json')){
             throw new RuntimeException('update_release_manifest_missing');
         }
     }
 
-    private function inspectTar(string $path): array
+    private function extractSourceArchive(string $archivePath,string $destination): void
+    {
+        $this->extract($archivePath,$destination,true);
+    }
+
+    private function inspectTar(string $path,bool $sourceArchive=false): array
     {
         $handle=@gzopen($path,'rb');
         if(!is_resource($handle))throw new RuntimeException('update_artifact_invalid');
-        $files=[];$seen=[];$totalBytes=0;$entries=0;$terminated=false;
+        $files=[];$seen=[];$totalBytes=0;$entries=0;$terminated=false;$archiveRoot=null;
         try{
             while(true){
                 $header=$this->readTarBytes($handle,512);
@@ -433,17 +535,42 @@ final class OnlineUpdate
                 $prefix=rtrim(substr($header,345,155),"\0");
                 $rawPath=$prefix!==''?$prefix.'/'.$name:$name;
                 if(str_contains($rawPath,'\\'))throw new RuntimeException('update_archive_path_invalid');
+                $archivePath=$rawPath;
+                if($sourceArchive){
+                    $segments=explode('/',rtrim($rawPath,'/'));
+                    if(!preg_match('/^[A-Za-z0-9_.-]{1,180}$/D',$segments[0])
+                        ||$segments[0]==='.'||$segments[0]==='..'){
+                        throw new RuntimeException('update_archive_path_invalid');
+                    }
+                    if($archiveRoot===null)$archiveRoot=$segments[0];
+                    if($segments[0]!==$archiveRoot)throw new RuntimeException('update_archive_path_invalid');
+                    $rawPath=implode('/',array_slice($segments,1));
+                }
                 $sizeField=trim(str_replace("\0",' ',substr($header,124,12)));
                 if($sizeField!==''&&!preg_match('/^[0-7]+$/D',$sizeField))throw new RuntimeException('update_artifact_invalid');
                 $size=$sizeField===''?0:(int)octdec($sizeField);
                 $type=substr($header,156,1);
                 $link=rtrim(substr($header,157,100),"\0");
                 if($type==='5'){
-                    if($size!==0||!$this->safeArchiveDirectory($rawPath))throw new RuntimeException('update_archive_path_invalid');
+                    if($size!==0||($sourceArchive?($rawPath!==''&&!$this->safeArchiveRelativePath($rawPath)):!$this->safeArchiveDirectory($rawPath))){
+                        throw new RuntimeException('update_archive_path_invalid');
+                    }
                     continue;
                 }
-                if(($type!=='0'&&$type!=="\0")||$link!==''||!$this->safeArchivePath($rawPath)){
+                if(($type!=='0'&&$type!=="\0")||$link!==''||($sourceArchive
+                    ?($rawPath===''||!$this->safeArchiveRelativePath($rawPath))
+                    :!$this->safeArchivePath($rawPath))){
                     throw new RuntimeException('update_archive_path_invalid');
+                }
+                if($sourceArchive&&$rawPath!=='composer.json'&&$rawPath!=='composer.lock'
+                    &&!ReleaseManifest::isRuntimePath($rawPath)){
+                    if($size<0||$size>self::MAX_UNCOMPRESSED_BYTES-$totalBytes)throw new RuntimeException('update_archive_size_limit');
+                    $totalBytes+=$size;$this->skipTarBytes($handle,$size);continue;
+                }
+                if($sourceArchive){
+                    $archiveKey=strtolower($archivePath);
+                    if(isset($seen[$archiveKey]))throw new RuntimeException('update_archive_duplicate');
+                    $seen[$archiveKey]=true;
                 }
                 $filesCount=count($files)+1;
                 if($filesCount>self::MAX_ARCHIVE_FILES)throw new RuntimeException('update_archive_file_limit');
@@ -455,7 +582,8 @@ final class OnlineUpdate
                         throw new RuntimeException('update_archive_path_conflict');
                     }
                 }
-                $seen[$key]=true;$totalBytes+=$size;$files[]=['path'=>$rawPath,'size'=>$size];
+                $seen[$key]=true;$totalBytes+=$size;
+                $files[]=['path'=>$rawPath,'archive_path'=>$archivePath,'size'=>$size];
                 $this->skipTarBytes($handle,$size);
             }
         }finally{gzclose($handle);}
@@ -484,25 +612,28 @@ final class OnlineUpdate
         }
     }
 
-    private function safeArchiveDirectory(string $path): bool
+    private function safeArchiveRelativePath(string $path): bool
     {
-        $path=rtrim($path,'/');
         if($path===''||strlen($path)>1024||str_contains($path,"\0")||str_contains($path,'\\')
             ||str_starts_with($path,'/')||preg_match('/^[A-Za-z]:/D',$path))return false;
         foreach(explode('/',$path)as$segment){
             if($segment===''||$segment==='.'||$segment==='..')return false;
         }
-        return ReleaseManifest::isRuntimePath($path.'/__d2s_directory__');
+        return true;
+    }
+
+    private function safeArchiveDirectory(string $path): bool
+    {
+        $path=rtrim($path,'/');
+        return $this->safeArchiveRelativePath($path)
+            &&ReleaseManifest::isRuntimePath($path.'/__d2s_directory__');
     }
 
     private function safeArchivePath(string $path): bool
     {
-        if($path===''||strlen($path)>1024||str_contains($path,"\0")||str_contains($path,'\\')
-            ||str_starts_with($path,'/')||preg_match('/^[A-Za-z]:/D',$path))return false;
-        foreach(explode('/',$path)as$segment){
-            if($segment===''||$segment==='.'||$segment==='..')return false;
-        }
-        return $path==='release-manifest.json'||ReleaseManifest::isRuntimePath($path);
+        return $this->safeArchiveRelativePath($path)
+            &&(in_array($path,['release-manifest.json','composer.json','composer.lock'],true)
+                ||ReleaseManifest::isRuntimePath($path));
     }
 
     private function ensureDirectory(string $directory,string $root): void
@@ -528,6 +659,58 @@ final class OnlineUpdate
                 throw new RuntimeException('update_archive_extract_failed');
             }
         }
+    }
+
+    private function copyCurrentVendor(string $destination): void
+    {
+        $currentLock=$this->root.DIRECTORY_SEPARATOR.'composer.lock';
+        $candidateLock=$destination.DIRECTORY_SEPARATOR.'composer.lock';
+        $source=$this->root.DIRECTORY_SEPARATOR.'vendor';
+        $target=$destination.DIRECTORY_SEPARATOR.'vendor';
+        if(!is_file($currentLock)||is_link($currentLock)||!is_file($candidateLock)||is_link($candidateLock)
+            ||!is_dir($source)||is_link($source)||file_exists($target)){
+            throw new RuntimeException('update_dependencies_changed');
+        }
+        $currentHash=hash_file('sha256',$currentLock);$candidateHash=hash_file('sha256',$candidateLock);
+        if(!is_string($currentHash)||!is_string($candidateHash)||!hash_equals($currentHash,$candidateHash)){
+            throw new RuntimeException('update_dependencies_changed');
+        }
+        if(!mkdir($target,0700))throw new RuntimeException('update_candidate_unavailable');
+        $iterator=new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($source,FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::SELF_FIRST,
+        );
+        foreach($iterator as$item){
+            if($item->isLink())throw new RuntimeException('update_dependencies_invalid');
+            $relative=substr($item->getPathname(),strlen($source)+1);
+            $copyTo=$target.DIRECTORY_SEPARATOR.$relative;
+            if($item->isDir()){
+                if(!is_dir($copyTo)&&!mkdir($copyTo,0700))throw new RuntimeException('update_dependencies_copy_failed');
+                continue;
+            }
+            if(!$item->isFile()||!copy($item->getPathname(),$copyTo)){
+                throw new RuntimeException('update_dependencies_copy_failed');
+            }
+            @chmod($copyTo,0600);
+        }
+    }
+
+    private function migrationInventory(string $root): array
+    {
+        $directory=$root.DIRECTORY_SEPARATOR.'database'.DIRECTORY_SEPARATOR.'migrations';
+        if(!is_dir($directory)||is_link($directory))throw new RuntimeException('update_migration_inventory_invalid');
+        $result=[];
+        foreach(glob($directory.DIRECTORY_SEPARATOR.'*.php')?:[]as$file){
+            $version=basename($file);
+            if(!is_file($file)||is_link($file)||!preg_match('/^[0-9]{4}_[A-Za-z0-9_]+\.php$/D',$version)){
+                throw new RuntimeException('update_migration_inventory_invalid');
+            }
+            $hash=hash_file('sha256',$file);
+            if(!is_string($hash))throw new RuntimeException('update_migration_inventory_invalid');
+            $result[]=['version'=>$version,'sha256'=>$hash];
+        }
+        usort($result,static fn(array $a,array $b):int=>strcmp($a['version'],$b['version']));
+        return $result;
     }
 
     private function verifyMigrations(string $root,array $migrations): void
