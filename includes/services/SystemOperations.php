@@ -42,8 +42,10 @@ final readonly class SystemOperations
         $migrations=self::migrationStatus($rows,$this->root.'/database/migrations');
         $configured=getenv('D2S_RELEASE')?:null;
         $head=ReleaseManifest::gitHead($this->root);
-        $release=$configured?:$head;
         $manifestPath=getenv('D2S_RELEASE_MANIFEST')?:$this->root.'/release-manifest.json';
+        $manifestRelease=$this->manifestRelease($manifestPath);
+        $release=$manifestRelease?:($configured?:$head);
+        $releaseSource=$manifestRelease?'release_manifest':($configured?'environment':($head?'git_baseline':'unknown'));
         $manifest=['state'=>'unconfigured','errors'=>[],'file_count'=>null,'root_hash'=>null];
         if(is_file($manifestPath)){
             if(!is_string($release)||!preg_match('/^[a-f0-9]{40}$/D',$release)){
@@ -58,8 +60,10 @@ final readonly class SystemOperations
         }
         try{$githubRepository=$this->github()->repository();}
         catch(\RuntimeException){$githubRepository=null;}
-        return ['github_repository'=>$githubRepository,'release'=>$release,'git_baseline'=>$head,'release_source'=>$configured?'environment':($head?'git_baseline':'unknown'),
+        return ['github_repository'=>$githubRepository,'release'=>$release,'git_baseline'=>$head,'release_source'=>$releaseSource,
             'manifest'=>$manifest,'migrations'=>$migrations,'online_update_enabled'=>true,
+            'online_update_install_enabled'=>(new OnlineUpdateTasks($this->root))->enabled(),
+            'online_update_task'=>(new OnlineUpdateTasks($this->root))->latest(),
             'online_update'=>(new OnlineUpdate($this->root))->status(),
             'tools'=>['preflight'=>is_file($this->root.'/bin/preflight.php'),'migrate'=>is_file($this->root.'/bin/migrate.php'),
                 'verify_manifest'=>is_file($this->root.'/bin/verify-release-manifest.php'),
@@ -99,7 +103,17 @@ final readonly class SystemOperations
 
     private function currentRelease(): ?string
     {
-        return getenv('D2S_RELEASE')?:ReleaseManifest::gitHead($this->root);
+        $manifestPath=getenv('D2S_RELEASE_MANIFEST')?:$this->root.'/release-manifest.json';
+        return $this->manifestRelease($manifestPath)?:((getenv('D2S_RELEASE')?:null)?:ReleaseManifest::gitHead($this->root));
+    }
+
+    private function manifestRelease(string $path): ?string
+    {
+        if(!is_file($path)||is_link($path))return null;
+        try{$manifest=json_decode((string)file_get_contents($path),true,16,JSON_THROW_ON_ERROR);}
+        catch(\JsonException){return null;}
+        $release=is_array($manifest)?($manifest['release']??null):null;
+        return is_string($release)&&preg_match('/^[a-f0-9]{40}$/D',$release)?$release:null;
     }
 
     private function auditStagedUpdate(int $adminId,array $result,array $context,int $now): array
@@ -131,6 +145,31 @@ final readonly class SystemOperations
             'php_files_linted'=>$result['php_files_linted'],'reused'=>$result['reused'],
         ],$now);
         return $result;
+    }
+
+    public function startOnlineUpdateInstall(int $adminId,array $input,array $context,int $now): array
+    {
+        Permissions::require($this->db,$adminId,'settings.manage');
+        $release=$input['release']??null;
+        if(!is_string($release)||!preg_match('/^[a-f0-9]{40}$/D',$release)){
+            throw new Problem('update_prepare_input_invalid',400);
+        }
+        try{$task=(new OnlineUpdateTasks($this->root))->start($release);}
+        catch(\RuntimeException $error){throw new Problem($error->getMessage(),400);}
+        $email=$this->db->prepare("SELECT email FROM portal_admins WHERE id=? AND status='active'");
+        $email->execute([$adminId]);$adminEmail=$email->fetchColumn();
+        if($adminEmail===false)throw new Problem('administrator_inactive',403);
+        Audit::admin($this->db,$adminId,(string)$adminEmail,'START_ONLINE_UPDATE','release',$context,'SUCCESS',[
+            'release'=>$release,'task_id'=>$task['task_id'],
+        ],$now);
+        return $task;
+    }
+
+    public function onlineUpdateProgress(int $adminId,string $taskId): array
+    {
+        Permissions::require($this->db,$adminId,'settings.manage');
+        try{return (new OnlineUpdateTasks($this->root))->get($taskId);}
+        catch(\RuntimeException $error){throw new Problem($error->getMessage(),404);}
     }
 
     /** Inspect migration files without evaluating their PHP or executing any SQL. */

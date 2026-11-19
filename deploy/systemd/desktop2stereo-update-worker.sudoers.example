@@ -1,0 +1,4 @@
+# Install with visudo -f /etc/sudoers.d/desktop2stereo-update.
+# Replace www-data and d2s-php-fpm.service if the host uses different names.
+www-data ALL=(root) NOPASSWD: /usr/local/sbin/d2s-start-update-task
+d2s-update ALL=(root) NOPASSWD: /usr/bin/systemctl restart d2s-php-fpm.service

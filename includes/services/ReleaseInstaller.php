@@ -18,14 +18,17 @@ final class ReleaseInstaller
         private string $deploymentRoot,
         private Closure $migrate,
         private Closure $health,
+        private ?Closure $progress=null,
     ) {}
 
     public function install(string $release,string $backupDirectory,int $now): array
     {
         if(!preg_match('/^[a-f0-9]{40}$/D',$release))throw new RuntimeException('update_install_release_invalid');
+        $this->report('validating',5,$release);
         $root=$this->root();
         $current=$root.DIRECTORY_SEPARATOR.'current';
-        if(!is_dir($current)||is_link($current))throw new RuntimeException('update_install_current_invalid');
+        if(!is_dir($current))throw new RuntimeException('update_install_current_invalid');
+        if(is_link($current))return $this->installSymlinkRelease($root,$current,$release,$backupDirectory,$now);
         $currentRelease=$this->currentRelease($current);
         $backup=BackupSetVerifier::verify($backupDirectory,$currentRelease);
         if(($backup['product_images_included']??false)!==true){
@@ -44,11 +47,13 @@ final class ReleaseInstaller
         $codeSwitched=false;
         $lock=$this->lock();
         try{
+            $this->report('copying_release',25,$release);
             $this->copyTree((string)$candidate['root'],$next);
             $verified=ReleaseManifest::verify($next,$next.DIRECTORY_SEPARATOR.'release-manifest.json',$release);
             if(!$verified['ok']||!hash_equals((string)$candidate['manifest_root_hash'],$verified['root_hash'])){
                 throw new RuntimeException('update_install_candidate_invalid');
             }
+            $this->report('applying_migrations',50,$release);
             $migrationResult=($this->migrate)($next,$release,$now);
             if(!is_array($migrationResult))throw new RuntimeException('update_install_migration_invalid');
             foreach($migrationResult as$migration){
@@ -71,6 +76,7 @@ final class ReleaseInstaller
                 if(!rename($previous,$current))throw new RuntimeException('update_install_rollback_failed');
                 throw new RuntimeException('update_install_switch_failed');
             }
+            $this->report('restarting_service',85,$release);
             $health=($this->health)($current,$release,$now);
             $healthy=$health===true||(is_array($health)&&($health['ok']??false)===true);
             if(!$healthy){
@@ -84,6 +90,7 @@ final class ReleaseInstaller
             }
             $state['status']='installed';
             $state['installed_at']=$now;
+            $this->report('installed',100,$release);
             $this->writeJson($this->statePath(),$state);
             return [
                 'status'=>'installed','release'=>$release,'previous_release'=>$currentRelease,
@@ -91,6 +98,7 @@ final class ReleaseInstaller
                 'database_restore_required'=>$applied!==[],
             ];
         }catch(Throwable $error){
+            $this->report('failed',100,$release,$error->getMessage());
             if(is_dir($next)||is_link($next))$this->removeTree($next);
             if($codeSwitched&&!is_dir($current)&&is_dir($previous)&&!rename($previous,$current)){
                 throw new RuntimeException('update_install_rollback_failed',0,$error);
@@ -99,6 +107,146 @@ final class ReleaseInstaller
         }finally{
             flock($lock,LOCK_UN);fclose($lock);
         }
+    }
+
+    private function installSymlinkRelease(string $root,string $current,string $release,string $backupDirectory,int $now): array
+    {
+        $currentTarget=$this->managedCurrentTarget($root,$current);
+        $currentRelease=$this->currentRelease($currentTarget);
+        $backup=BackupSetVerifier::verify($backupDirectory,$currentRelease);
+        if(($backup['product_images_included']??false)!==true)throw new RuntimeException('update_install_backup_images_required');
+        $candidate=$this->updates->preparedCandidate($release);
+        foreach(['composer.lock','vendor/autoload.php']as$dependencyFile){
+            $path=(string)$candidate['root'].DIRECTORY_SEPARATOR.str_replace('/',DIRECTORY_SEPARATOR,$dependencyFile);
+            if(!is_file($path)||is_link($path))throw new RuntimeException('update_install_dependencies_invalid');
+        }
+
+        $releases=$root.DIRECTORY_SEPARATOR.'releases';
+        if(!is_dir($releases)&&!mkdir($releases,0750,true)&&!is_dir($releases)){
+            throw new RuntimeException('update_install_directory_failed');
+        }
+        if(is_link($releases))throw new RuntimeException('update_install_root_invalid');
+        $releases=realpath($releases);
+        if($releases===false)throw new RuntimeException('update_install_root_invalid');
+        $transition=gmdate('YmdHis',$now).'-'.bin2hex(random_bytes(5));
+        $temporary=$releases.DIRECTORY_SEPARATOR.'.staging-'.$release.'-'.$transition;
+        $destination=$releases.DIRECTORY_SEPARATOR.$release;
+        $failed=$root.DIRECTORY_SEPARATOR.'failed'.DIRECTORY_SEPARATOR.$release.'-'.$transition;
+        if(file_exists($destination)||is_link($destination))throw new RuntimeException('update_candidate_exists');
+
+        $applied=[];$switched=false;$lock=$this->lock();
+        try{
+            if($this->managedCurrentTarget($root,$current)!==$currentTarget){
+                throw new RuntimeException('update_install_current_changed');
+            }
+            $this->report('copying_release',25,$release);
+            $this->copyTree((string)$candidate['root'],$temporary);
+            $verified=ReleaseManifest::verify($temporary,$temporary.DIRECTORY_SEPARATOR.'release-manifest.json',$release);
+            if(!$verified['ok']||!hash_equals((string)$candidate['manifest_root_hash'],$verified['root_hash'])){
+                throw new RuntimeException('update_install_candidate_invalid');
+            }
+            $this->report('applying_migrations',50,$release);
+            $migrationResult=($this->migrate)($temporary,$release,$now);
+            if(!is_array($migrationResult))throw new RuntimeException('update_install_migration_invalid');
+            foreach($migrationResult as$migration){
+                if(!is_string($migration)||!preg_match('/^[0-9]{4}_[A-Za-z0-9_]+\.php$/D',$migration)){
+                    throw new RuntimeException('update_install_migration_invalid');
+                }
+            }
+            $applied=$migrationResult;
+            $state=[
+                'format'=>'d2s-release-install-v1','status'=>'switching','release'=>$release,
+                'previous_release'=>$currentRelease,'previous_path'=>$currentTarget,'transition'=>$transition,
+                'backup'=>$backup,'applied_migrations'=>$applied,'created_at'=>$now,
+                'database_restore_required'=>$applied!==[],
+            ];
+            $this->writeJson($this->statePath(),$state);
+            if(!rename($temporary,$destination))throw new RuntimeException('update_install_switch_failed');
+            $this->switchCurrentLink($root,'releases/'.$release,$transition);
+            $switched=true;
+            $this->report('restarting_service',85,$release);
+            $health=($this->health)($destination,$release,$now);
+            $healthy=$health===true||(is_array($health)&&($health['ok']??false)===true);
+            if(!$healthy){
+                $this->switchCurrentLink($root,$this->relativeToRoot($root,$currentTarget),$transition.'-restore');
+                $switched=false;
+                try{($this->health)($currentTarget,$currentRelease,$now);}catch(Throwable){}
+                $this->ensureParent($failed);
+                if(is_dir($destination)&&!rename($destination,$failed))throw new RuntimeException('update_install_rollback_failed');
+                $state['status']='health_failed_code_rolled_back';
+                $state['failed_path']=$failed;
+                $this->writeJson($this->statePath(),$state);
+                $suffix=$applied===[]?'':'database_restore_required';
+                throw new RuntimeException('update_install_health_failed'.($suffix===''?'':':'.$suffix));
+            }
+            $state['status']='installed';$state['installed_at']=$now;
+            $this->writeJson($this->statePath(),$state);
+            $this->report('installed',100,$release);
+            return ['status'=>'installed','release'=>$release,'previous_release'=>$currentRelease,
+                'previous_path'=>$currentTarget,'backup'=>$backup,'applied_migrations'=>$applied,
+                'database_restore_required'=>$applied!==[]];
+        }catch(Throwable $error){
+            if($switched){
+                $this->switchCurrentLink($root,$this->relativeToRoot($root,$currentTarget),$transition.'-catch-restore');
+                try{($this->health)($currentTarget,$currentRelease,$now);}catch(Throwable){}
+            }
+            if(is_dir($temporary)||is_link($temporary))$this->removeTree($temporary);
+            $this->report('failed',100,$release,$error->getMessage());
+            throw $error;
+        }finally{
+            flock($lock,LOCK_UN);fclose($lock);
+        }
+    }
+
+    private function managedCurrentTarget(string $root,string $current): string
+    {
+        if(!is_link($current))throw new RuntimeException('update_install_current_invalid');
+        $target=realpath($current);
+        $releases=realpath($root.DIRECTORY_SEPARATOR.'releases');
+        if($target===false||$releases===false
+            ||!str_starts_with($this->pathKey($target),$this->pathKey($releases).DIRECTORY_SEPARATOR)
+            ||!is_dir($target)||is_link($target)){
+            throw new RuntimeException('update_install_current_invalid');
+        }
+        return $target;
+    }
+
+    private function switchCurrentLink(string $root,string $relativeTarget,string $transition): void
+    {
+        if($relativeTarget===''||str_contains($relativeTarget,"\0")||str_starts_with($relativeTarget,'/')
+            ||preg_match('/^[A-Za-z]:/D',$relativeTarget)
+            ||in_array('..',explode('/',$relativeTarget),true)){
+            throw new RuntimeException('update_install_current_invalid');
+        }
+        $current=$root.DIRECTORY_SEPARATOR.'current';
+        if(!is_link($current))throw new RuntimeException('update_install_current_invalid');
+        $temporary=$root.DIRECTORY_SEPARATOR.'.current-'.$transition;
+        if(file_exists($temporary)||is_link($temporary))throw new RuntimeException('update_install_current_invalid');
+        if(!symlink(str_replace('/',DIRECTORY_SEPARATOR,$relativeTarget),$temporary)){
+            throw new RuntimeException('update_install_switch_failed');
+        }
+        if(!rename($temporary,$current)){
+            @unlink($temporary);
+            throw new RuntimeException('update_install_switch_failed');
+        }
+    }
+
+    private function relativeToRoot(string $root,string $path): string
+    {
+        $prefix=rtrim($root,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+        if(!str_starts_with($this->pathKey($path),$this->pathKey($prefix))){
+            throw new RuntimeException('update_install_current_invalid');
+        }
+        return str_replace(DIRECTORY_SEPARATOR,'/',substr($path,strlen($prefix)));
+    }
+
+    private function report(string $phase,int $percent,string $release,?string $error=null): void
+    {
+        $safeError=$error!==null&&preg_match('/^[A-Za-z0-9_.:-]{1,160}$/D',$error)?$error:($error===null?null:'update_install_failed');
+        if($this->progress!==null)($this->progress)([
+            'phase'=>$phase,'percent'=>max(0,min(100,$percent)),'release'=>$release,
+            'updated_at'=>time(),'error'=>$safeError,
+        ]);
     }
 
     public function rollback(int $now): array
@@ -112,7 +260,27 @@ final class ReleaseInstaller
             }
             $current=$root.DIRECTORY_SEPARATOR.'current';
             $previous=$this->assertManagedPath((string)$state['previous_path']);
-            if(!is_dir($current)||is_link($current)||!is_dir($previous)||is_link($previous)){
+            if(is_link($current)){
+                $currentTarget=$this->managedCurrentTarget($root,$current);
+                $previousRelease=$this->currentRelease($previous);
+                $transition='rollback-'.bin2hex(random_bytes(6));
+                $this->switchCurrentLink($root,$this->relativeToRoot($root,$previous),$transition);
+                $health=($this->health)($previous,$previousRelease,$now);
+                $healthy=$health===true||(is_array($health)&&($health['ok']??false)===true);
+                if(!$healthy){
+                    $this->switchCurrentLink($root,$this->relativeToRoot($root,$currentTarget),$transition.'-restore');
+                    throw new RuntimeException('update_rollback_health_failed');
+                }
+                $state['status']='rolled_back';$state['rolled_back_at']=$now;
+                $state['rolled_back_path']=$currentTarget;
+                $state['release']=$previousRelease;
+                $this->writeJson($this->statePath(),$state);
+                $this->report('rolled_back',100,$previousRelease);
+                return ['status'=>'rolled_back','release'=>$previousRelease,'rolled_back_path'=>$currentTarget,
+                    'database_restore_required'=>(bool)($state['database_restore_required']??false),
+                    'applied_migrations'=>$state['applied_migrations']??[]];
+            }
+            if(!is_dir($current)||!is_dir($previous)||is_link($previous)){
                 throw new RuntimeException('update_rollback_path_invalid');
             }
             $release=(string)($state['release']??'');
@@ -146,10 +314,12 @@ final class ReleaseInstaller
         }
         $root=realpath($this->deploymentRoot);
         if($root===false||!is_dir($root)||is_link($this->deploymentRoot))throw new RuntimeException('update_install_root_invalid');
-        foreach(['current','staging','rollback','failed','state']as$name){
+        foreach(['staging','rollback','failed','state','releases']as$name){
             $path=$root.DIRECTORY_SEPARATOR.$name;
             if(is_link($path))throw new RuntimeException('update_install_root_invalid');
         }
+        $current=$root.DIRECTORY_SEPARATOR.'current';
+        if(is_link($current))$this->managedCurrentTarget($root,$current);
         return rtrim($root,DIRECTORY_SEPARATOR);
     }
 

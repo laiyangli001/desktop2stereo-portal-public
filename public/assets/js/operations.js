@@ -44,6 +44,16 @@
     update_stage_path_invalid: tr('updates.errors.storage'),
     update_stage_conflict: tr('updates.errors.conflict'),
     update_prepare_input_invalid: tr('updates.errors.input'),
+    update_install_unavailable: tr('updates.errors.install'),
+    update_install_launcher_failed: tr('updates.errors.install'),
+    update_install_backup_failed: tr('updates.errors.install'),
+    update_install_backup_unavailable: tr('updates.errors.install'),
+    update_install_task_invalid: tr('updates.errors.install'),
+    update_install_task_not_found: tr('updates.errors.install'),
+    update_install_failed: tr('updates.errors.install'),
+    update_restart_not_configured: tr('updates.errors.install'),
+    update_service_restart_failed: tr('updates.errors.install'),
+    update_install_health_failed: tr('updates.errors.install'),
     update_path_invalid: tr('updates.errors.prepare'),
     update_candidate_public_path: tr('updates.errors.prepare'),
     update_candidate_path_invalid: tr('updates.errors.prepare'),
@@ -1559,6 +1569,7 @@
     const download = button(tr('updates.stage_button'), async () => {
       if (!candidate || candidate.address !== address.value.trim()) return;
       check.disabled = true; download.disabled = true; address.disabled = true;
+      feedback.textContent = tr('updates.github.downloading');
       try {
         await request('/upgrade/download', {address:candidate.address, release:candidate.release});
         await load();
@@ -1629,7 +1640,27 @@
       [tr('updates.candidate_directory'), online.candidate_writable!==false ? tr('updates.status.writable') : tr('updates.status.unavailable')],
       [tr('updates.staged_packages'), online.pending_install||0],
       [tr('updates.prepared_packages'), online.prepared_packages||0],
+      [tr('updates.installation'), data.online_update_install_enabled ? tr('updates.status.configured') : tr('updates.install_unavailable')],
     ]));
+    const task=data.online_update_task;
+    const activeTask=task&&['queued','running'].includes(task.status);
+    const phaseLabel=phase=>tr('updates.install_progress.'+phase);
+    const watchInstall=async(taskId,progress)=>{
+      progress.hidden=false;
+      for(let attempt=0;attempt<1800;attempt++){
+        const state=await request('/upgrade/progress?'+new URLSearchParams({task_id:taskId}));
+        progress.textContent=(state.percent??0)+'% · '+phaseLabel(state.phase||state.status);
+        if(state.status==='failed')throw new Error(state.error||'update_install_failed');
+        if(state.status==='completed'){
+          progress.textContent=tr('updates.install_complete');
+          if(notice){message(tr('updates.install_complete'),notice);notice.dataset.state='success';}
+          await load();
+          return;
+        }
+        await new Promise(resolve=>setTimeout(resolve,1000));
+      }
+      throw new Error('update_install_timeout');
+    };
     if ((online.items||[]).length) {
       advanced.append(table([
         [tr('updates.release'), item => item.release],
@@ -1640,34 +1671,45 @@
         [tr('operations.render_maintenance.state'), item => badge(item.valid ? tr('updates.status.verified') : tr('updates.status.invalid'), !item.valid)],
         [tr('updates.candidate_state'), item => badge(item.prepared?.ready ? tr('updates.prepared') : tr('updates.not_prepared'), !item.prepared?.ready)],
         [tr('updates.actions'), item => {
-          const button=node('button',item.prepared?.ready ? tr('updates.prepared') : tr('updates.prepare_button'),'site-secondary');
-          button.type='button';
-          button.disabled=!item.valid||item.prepared?.ready||online.candidate_writable===false;
-          if(!button.disabled)button.addEventListener('click',async()=>{
-            button.disabled=true;
+          const actions=node('div',null,'operation-panel-actions');
+          const prepare=button(item.prepared?.ready ? tr('updates.prepared') : tr('updates.prepare_button'),async()=>{
+            prepare.disabled=true;
             try{
               await request('/upgrade/prepare',{release:item.release});
               await load();
               if(notice){message(tr('updates.prepare_success'),notice);notice.dataset.state='success';}
-            }catch(error){message(error,notice);button.disabled=false;}
+            }catch(error){message(error,notice);prepare.disabled=false;}
           });
-          return button;
+          prepare.disabled=!item.valid||item.prepared?.ready||online.candidate_writable===false;
+          actions.append(prepare);
+          if(item.prepared?.ready){
+            const install=button(tr('updates.install_button'),async()=>{
+              install.disabled=true;
+              const progress=node('p',tr('updates.install_starting'),'portal-help');
+              actions.append(progress);
+              try{
+                const started=await request('/upgrade/install',{release:item.release});
+                await watchInstall(started.task_id,progress);
+              }catch(error){message(error,progress);install.disabled=false;}
+            });
+            install.disabled=!data.online_update_install_enabled||Boolean(activeTask)||item.release===data.release;
+            actions.append(install);
+          }
+          return actions;
         }],
       ], online.items));
     } else {
       advanced.append(node('p', tr('updates.no_staged_packages'), 'portal-help'));
     }
-
+    if(task){
+      const progress=node('p', '', 'portal-help');
+      progress.hidden=false;
+      progress.textContent=task.status==='completed'?tr('updates.install_complete'):
+        task.status==='failed'?tr('updates.install_failed'):((task.percent??0)+'% · '+phaseLabel(task.phase||task.status));
+      advanced.append(progress);
+      if(activeTask)watchInstall(task.task_id,progress).catch(error=>message(error,progress));
+    }
     advanced.append(node('p', tr('updates.stage_boundary'), 'portal-help'));
-    advanced.append(node('h3', tr('operations.render_upgrade.server_upgrade_procedure'), 'operation-section-title'));
-    const steps = node('ol');
-    for (const text of [
-      tr('operations.render_upgrade.create_and_verify_database_and_private_attachment_backups_with_the'),
-      tr('operations.render_upgrade.prepare_the_candidate_package_and_verify_its_release_identifier_and'),
-      tr('operations.render_upgrade.deploy_the_candidate_in_a_maintenance_window_and_run_php'),
-      tr('operations.render_upgrade.run_php_bin_preflight_php_then_verify_health_and_critical'),
-    ]) steps.append(node('li', text));
-    advanced.append(steps);
   }
   async function loadDashboard() {
     const data = await request('/dashboard');

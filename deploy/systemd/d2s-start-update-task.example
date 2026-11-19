@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+
+if [ "$#" -ne 1 ]; then
+    exit 2
+fi
+
+task_id=$1
+if [ "${#task_id}" -ne 32 ]; then
+    exit 2
+fi
+case "$task_id" in
+    *[!a-f0-9]*) exit 2 ;;
+esac
+
+exec /usr/bin/systemctl --no-block start "desktop2stereo-update-worker@${task_id}.service"

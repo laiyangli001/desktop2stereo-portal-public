@@ -7,8 +7,9 @@ use D2S\repositories\Database;
 use D2S\services\Migrator;
 use D2S\services\OnlineUpdate;
 use D2S\services\ReleaseInstaller;
+use D2S\services\OnlineUpdateTasks;
 
-$options=getopt('',['release:','backup:','deployment-root:','health-url:','rollback']);
+$options=getopt('',['release:','backup:','deployment-root:','health-url:','task-id:','rollback']);
 $absolute=static function(string $path):bool{
     return $path!==''&&!str_contains($path,"\0")
         &&(str_starts_with($path,DIRECTORY_SEPARATOR)||preg_match('/^[A-Za-z]:[\\\\\/]/D',$path));
@@ -83,6 +84,31 @@ $checkHealth=static function(string $rootPath,string $expectedRelease)use($healt
         'release_root_hash'=>$data['release_root_hash']??null];
 };
 
+$restartService=static function():void{
+    $service=trim((string)getenv('D2S_UPDATE_RESTART_SERVICE'));
+    if(!preg_match('/^[A-Za-z0-9_.@:-]{1,128}\.service$/D',$service))throw new RuntimeException('update_restart_not_configured');
+    $pipes=[];
+    $process=@proc_open(['/usr/bin/sudo','-n','/usr/bin/systemctl','restart',$service],
+        [0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes,null,null,['bypass_shell'=>true]);
+    if(!is_resource($process))throw new RuntimeException('update_service_restart_failed');
+    fclose($pipes[0]);$stdout=stream_get_contents($pipes[1],2048);fclose($pipes[1]);
+    $stderr=stream_get_contents($pipes[2],2048);fclose($pipes[2]);
+    if(proc_close($process)!==0)throw new RuntimeException('update_service_restart_failed:'.trim((string)($stderr?:$stdout)));
+};
+$healthAfterRestart=static function(string $currentRoot,string $expectedRelease,int $now)use($restartService,$checkHealth):array{
+    $restartService();
+    return $checkHealth($currentRoot,$expectedRelease);
+};
+$progress=null;
+$taskId=$options['task-id']??null;
+if($taskId!==null){
+    if(!is_string($taskId)||!preg_match('/^[a-f0-9]{32}$/D',$taskId))throw new RuntimeException('update_install_task_invalid');
+    $tasks=new OnlineUpdateTasks();
+    $progress=static function(array $state)use($tasks,$taskId):void{
+        $tasks->update($taskId,array_replace($state,['status'=>($state['phase']??null)==='installed'?'completed':'running']));
+    };
+}
+
 try{
     $installer=new ReleaseInstaller(
         OnlineUpdate::fromEnvironment(),
@@ -91,7 +117,8 @@ try{
             $pdo=Database::fromEnvironment('D2S_MIGRATION_DB_');
             return (new Migrator($pdo,$candidateRoot.DIRECTORY_SEPARATOR.'database'.DIRECTORY_SEPARATOR.'migrations'))->run();
         },
-        static fn(string $currentRoot,string $expectedRelease,int $now):array=>$checkHealth($currentRoot,$expectedRelease),
+        static fn(string $currentRoot,string $expectedRelease,int $now):array=>$healthAfterRestart($currentRoot,$expectedRelease,$now),
+        $progress,
     );
     $result=$installer->install($release,$backup,time());
     echo json_encode(['success'=>true,'data'=>$result],JSON_THROW_ON_ERROR|JSON_UNESCAPED_SLASHES),PHP_EOL;

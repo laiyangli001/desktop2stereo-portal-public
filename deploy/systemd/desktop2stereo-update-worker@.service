@@ -1,0 +1,32 @@
+[Unit]
+Description=Desktop2Stereo Portal online update task %i
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=d2s-update
+Group=d2s-update
+EnvironmentFile=/etc/desktop2stereo-portal/update.env
+WorkingDirectory=/srv/desktop2stereo-portal/current
+ExecStart=/usr/bin/php /srv/desktop2stereo-portal/current/bin/run-online-update-task.php --task-id=%i
+TimeoutStartSec=45min
+UMask=0027
+PrivateTmp=true
+PrivateDevices=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+ReadWritePaths=/srv/desktop2stereo-portal
+ReadWritePaths=/var/backups/desktop2stereo-portal
+ReadWritePaths=/var/lib/desktop2stereo-portal/update-tasks
+ReadWritePaths=/var/lib/desktop2stereo-portal/update-staging
+ReadWritePaths=/var/lib/desktop2stereo-portal/update-candidates
+ReadWritePaths=/var/lib/desktop2stereo-portal/shared-storage
+
+[Install]
+WantedBy=multi-user.target
