@@ -28,6 +28,7 @@
   "github.check": "Nach Updates suchen",
   "github.checking": "GitHub-Releases werden geprüft…",
   "github.tag": "Release-Tag",
+  "github.latest_commit": "Neuster Commit auf GitHub (main)",
   "github.available": "Eine neuere Version steht zum Download bereit.",
   "github.current": "Die installierte Version ist aktuell.",
   "github.no_release": "Dieses Repository hat noch keine stabile Version.",

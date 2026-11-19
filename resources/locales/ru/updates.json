@@ -28,6 +28,7 @@
   "github.check": "Проверить обновления",
   "github.checking": "Проверка релизов GitHub…",
   "github.tag": "Тег релиза",
+  "github.latest_commit": "Последний коммит GitHub (main)",
   "github.available": "Доступна для скачивания новая версия.",
   "github.current": "Установлена последняя версия.",
   "github.no_release": "В репозитории пока нет стабильного релиза.",

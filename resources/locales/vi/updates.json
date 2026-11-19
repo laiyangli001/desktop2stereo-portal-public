@@ -28,6 +28,7 @@
   "github.check": "Kiểm tra cập nhật",
   "github.checking": "Đang kiểm tra bản phát hành GitHub…",
   "github.tag": "Thẻ bản phát hành",
+  "github.latest_commit": "Commit mới nhất trên GitHub (main)",
   "github.available": "Có phiên bản mới hơn để tải xuống.",
   "github.current": "Phiên bản đã cài đặt là bản mới nhất.",
   "github.no_release": "Kho mã này chưa có bản phát hành ổn định.",

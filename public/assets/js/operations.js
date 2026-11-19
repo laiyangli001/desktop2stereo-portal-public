@@ -1523,7 +1523,7 @@
         data.release_source === 'git_baseline' ? tr('operations.render_upgrade.code_baseline') : tr('operations.render_upgrade.deployment_release'),
         data.release?.slice(0, 12) || tr('operations.render_upgrade.not_configured'),
       ],
-      [tr('updates.github.latest_release'), tr('updates.github.not_checked')],
+      [tr('updates.github.latest_commit'), tr('updates.github.not_checked')],
     ]);
     const latestVersion = versionSummary.querySelectorAll('dd')[1];
     github.append(versionSummary);
@@ -1563,8 +1563,8 @@
         const releaseSha = typeof latest.release === 'string' && /^[a-f0-9]{40}$/i.test(latest.release)
           ? ' · ' + latest.release.slice(0, 12)
           : '';
-        latestVersion.textContent = latest.tag
-          ? latest.tag + releaseSha
+        latestVersion.textContent = latest.branch
+          ? latest.branch + releaseSha
           : tr('updates.github.unknown_version');
         if (latest.artifact_size) {
           releaseDetails.append(description([

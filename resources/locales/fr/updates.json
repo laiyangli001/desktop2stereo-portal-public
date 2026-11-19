@@ -28,6 +28,7 @@
   "github.check": "Rechercher des mises à jour",
   "github.checking": "Recherche de versions sur GitHub…",
   "github.tag": "Tag de la version",
+  "github.latest_commit": "Dernier commit GitHub (main)",
   "github.available": "Une version plus récente est disponible au téléchargement.",
   "github.current": "La version installée est à jour.",
   "github.no_release": "Ce dépôt ne contient encore aucune version stable.",

@@ -48,28 +48,20 @@ final class GitHubUpdateSource
             throw new RuntimeException('update_github_selection_changed');
         }
         $body=$this->sourceArchive($candidate['source_archive_url']);
-        return $this->update->stageSourceArchive($body,$release,$summary['repository'],$summary['tag']);
+        return $this->update->stageSourceArchive($body,$release,$summary['repository'],$summary['branch']);
     }
 
     private function candidate(?string $current): array
     {
         $repo=$this->repository();
-        $response=$this->api('/releases/latest');
-        if($response['status']===404&&$this->api('')['status']===200){
-            return ['summary'=>['state'=>'no_release','repository'=>$repo]];
-        }
-        $release=$this->json($response);
-        $tag=$release['tag_name']??null;
-        if(!is_string($tag)||!preg_match('/^[A-Za-z0-9][A-Za-z0-9._+-]{0,99}$/D',$tag)
-            ||($release['draft']??true)!==false||($release['prerelease']??true)!==false){
+        $branch='main';
+        $commit=$this->json($this->api('/commits/'.rawurlencode($branch)));
+        $target=$commit['sha']??null;
+        if(!is_string($target)||!preg_match('/^[a-f0-9]{40}$/D',$target)){
             throw new RuntimeException('update_github_unavailable');
         }
-        $url='https://github.com/'.$repo.'/releases/tag/'.rawurlencode($tag);
-        $target=$this->json($this->api('/commits/'.rawurlencode($tag)))['sha']??null;
-        if(!is_string($target)||!preg_match('/^[a-f0-9]{40}$/D',$target)){
-            throw new RuntimeException('update_github_release_mismatch');
-        }
-        $summary=['repository'=>$repo,'tag'=>$tag,'url'=>$url,'published_at'=>$release['published_at']??null,
+        $url='https://github.com/'.$repo.'/commit/'.rawurlencode($target);
+        $summary=['repository'=>$repo,'branch'=>$branch,'url'=>$url,
             'release'=>$target,'state'=>$this->comparison($current,$target)];
         return ['summary'=>$summary,'source_archive_url'=>'https://api.github.com/repos/'.$repo.'/tarball/'.rawurlencode($target)];
     }

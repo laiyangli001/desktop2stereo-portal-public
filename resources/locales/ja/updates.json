@@ -28,6 +28,7 @@
   "github.check": "更新を確認",
   "github.checking": "GitHub のリリースを確認しています…",
   "github.tag": "リリースタグ",
+  "github.latest_commit": "GitHub main の最新コミット",
   "github.available": "ダウンロードできる新しいリリースがあります。",
   "github.current": "インストール済みのリリースは最新です。",
   "github.no_release": "このリポジトリには安定版がまだありません。",

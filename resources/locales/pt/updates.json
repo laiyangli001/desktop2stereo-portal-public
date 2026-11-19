@@ -28,6 +28,7 @@
   "github.check": "Procurar atualizações",
   "github.checking": "A procurar versões no GitHub…",
   "github.tag": "Etiqueta da versão",
+  "github.latest_commit": "Commit mais recente do GitHub (main)",
   "github.available": "Há uma versão mais recente disponível para transferência.",
   "github.current": "A versão instalada está atualizada.",
   "github.no_release": "Este repositório ainda não tem uma versão estável.",

@@ -28,6 +28,7 @@
   "github.check": "업데이트 확인",
   "github.checking": "GitHub 릴리스를 확인하는 중…",
   "github.tag": "릴리스 태그",
+  "github.latest_commit": "GitHub main 최신 커밋",
   "github.available": "다운로드할 수 있는 새 버전이 있습니다.",
   "github.current": "설치된 릴리스가 최신입니다.",
   "github.no_release": "이 저장소에 정식 릴리스가 아직 없습니다.",

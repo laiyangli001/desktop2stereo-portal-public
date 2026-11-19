@@ -28,6 +28,7 @@
   "github.check": "檢查更新",
   "github.checking": "正在檢查 GitHub 發佈…",
   "github.tag": "發佈標籤",
+  "github.latest_commit": "GitHub main 最新提交",
   "github.available": "找到可下載的新版本。",
   "github.current": "目前已是最新版本。",
   "github.no_release": "此儲存庫尚無正式發佈。",
