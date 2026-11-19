@@ -10,7 +10,7 @@ $installed = D2S\services\Installation::installed();
     <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
     <title><?= d2s_tr('installation.page.title') ?></title>
-    <link rel="stylesheet" href="/assets/css/commerce.css"><link rel="stylesheet" href="/assets/css/portal.css">
+    <link rel="stylesheet" href="<?= d2s_escape(d2s_asset('/assets/css/commerce.css')) ?>"><link rel="stylesheet" href="<?= d2s_escape(d2s_asset('/assets/css/portal.css')) ?>">
     <link rel="stylesheet" href="/assets/css/operations.css">
     <?php require D2S_ROOT.'/template/partials/locale-runtime.php'; ?>
     <script src="<?= d2s_escape(d2s_asset('/assets/js/install.js')) ?>" defer></script>

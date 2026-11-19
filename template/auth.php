@@ -17,8 +17,8 @@ $nextQuery = $pageNext === '' ? '' : '?next=' . rawurlencode($pageNext);
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= d2s_escape($title) ?> · Desktop2Stereo</title>
-    <link rel="stylesheet" href="/assets/css/commerce.css">
-    <link rel="stylesheet" href="/assets/css/portal.css">
+    <link rel="stylesheet" href="<?= d2s_escape(d2s_asset('/assets/css/commerce.css')) ?>">
+    <link rel="stylesheet" href="<?= d2s_escape(d2s_asset('/assets/css/portal.css')) ?>">
     <script src="<?= d2s_escape(d2s_asset('/assets/js/accounts.js')) ?>" defer></script>
 </head>
 <body>
