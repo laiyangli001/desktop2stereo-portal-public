@@ -28,6 +28,8 @@
   "help.username": "3～32位字母、数字、下划线或短横线，不能全部为数字。",
   "help.password": "密码至少10个字符。",
   "actions.send_code": "发送验证码",
+  "actions.show_password": "显示密码",
+  "actions.hide_password": "隐藏密码",
   "actions.register": "完成验证并注册",
   "actions.reset": "重置密码",
   "actions.login": "登录",

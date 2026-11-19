@@ -178,6 +178,10 @@ a:focus-visible { outline: 3px solid var(--df-accent-2); outline-offset: 5px; }
 .portal-auth h1 { font-size: 30px; }
 .portal-auth label { display: block; font-weight: 600; margin: 18px 0 6px; }
 .portal-auth input, .portal-auth select { width: 100%; padding: 11px 12px; border: 1px solid var(--df-line); border-radius: 6px; background: #fff; color: var(--df-text); font: inherit; }
+.portal-password-field { display: flex; align-items: stretch; position: relative; }
+.portal-password-field input { padding-inline-end: 52px; }
+.portal-auth .portal-password-toggle { position: absolute; inset-block: 3px; inset-inline-end: 3px; width: 42px; padding: 0; border: 0; background: transparent; color: var(--df-muted); font-size: 20px; }
+.portal-auth .portal-password-toggle:hover { background: var(--df-accent-soft); color: var(--df-accent); }
 .portal-auth button { padding: 11px 16px; border: 1px solid var(--df-accent); border-radius: 6px; background: #fff; color: var(--df-accent); font: inherit; cursor: pointer; }
 .portal-auth button:hover { background: var(--df-accent-soft); }
 .portal-auth button:disabled { opacity: .6; cursor: default; }

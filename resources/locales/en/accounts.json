@@ -28,6 +28,8 @@
   "help.username": "Use 3–32 letters, digits, underscores or hyphens; digits alone are not allowed.",
   "help.password": "Use at least 10 characters for your password.",
   "actions.send_code": "Send code",
+  "actions.show_password": "Show password",
+  "actions.hide_password": "Hide password",
   "actions.register": "Verify and register",
   "actions.reset": "Reset password",
   "actions.login": "Sign in",
