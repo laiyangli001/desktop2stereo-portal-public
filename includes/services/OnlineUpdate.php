@@ -164,6 +164,11 @@ final class OnlineUpdate
         $temporary=$root.DIRECTORY_SEPARATOR.'.stage-'.$release.'-'.bin2hex(random_bytes(6));
         if(!mkdir($temporary,0700,true))throw new RuntimeException('update_staging_unavailable');
         try{
+            // The worker downloads the archive and the web process writes the preparation record.
+            $mode=UpdateSharedPermissions::directoryMode();
+            if(($mode&02000)!==0&&!chmod($temporary,$mode|0020)){
+                throw new RuntimeException('update_staging_unavailable');
+            }
             $this->write($temporary.DIRECTORY_SEPARATOR.'source.json',$metadata);
             $this->write($temporary.DIRECTORY_SEPARATOR.'source.tar.gz',$archive);
             if(!rename($temporary,$target))throw new RuntimeException('update_staging_unavailable');
