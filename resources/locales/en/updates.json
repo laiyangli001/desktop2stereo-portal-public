@@ -47,6 +47,8 @@
   "github.check": "Check for updates",
   "github.checking": "Checking GitHub releases…",
   "github.tag": "Release tag",
+  "github.latest_release": "GitHub release",
+  "github.not_checked": "Not checked yet",
   "github.available": "A newer release is available to download.",
   "github.current": "The installed release is up to date.",
   "github.no_release": "This repository has no stable release yet.",

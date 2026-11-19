@@ -47,6 +47,8 @@
   "github.check": "检查更新",
   "github.checking": "正在检查 GitHub 发布…",
   "github.tag": "发布标签",
+  "github.latest_release": "GitHub 发布版本",
+  "github.not_checked": "尚未检查",
   "github.available": "发现可下载的新版本。",
   "github.current": "当前版本已是最新。",
   "github.no_release": "该仓库还没有正式发布。",

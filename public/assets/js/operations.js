@@ -1518,10 +1518,15 @@
     };
     const github = node('section');
     github.append(node('h2', tr('updates.github.title')));
-    github.append(description([[
-      data.release_source === 'git_baseline' ? tr('operations.render_upgrade.code_baseline') : tr('operations.render_upgrade.deployment_release'),
-      data.release?.slice(0, 12) || tr('operations.render_upgrade.not_configured'),
-    ]]));
+    const versionSummary = description([
+      [
+        data.release_source === 'git_baseline' ? tr('operations.render_upgrade.code_baseline') : tr('operations.render_upgrade.deployment_release'),
+        data.release?.slice(0, 12) || tr('operations.render_upgrade.not_configured'),
+      ],
+      [tr('updates.github.latest_release'), tr('updates.github.not_checked')],
+    ]);
+    const latestVersion = versionSummary.querySelectorAll('dd')[1];
+    github.append(versionSummary);
     const sourceField = node('div', null, 'operation-form');
     const sourceLabel = node('label', tr('updates.github.title') + ' URL');
     const address = node('input');
@@ -1550,14 +1555,20 @@
       download.hidden = true; check.disabled = true; address.disabled = true;
       const checkedAddress = address.value.trim();
       releaseDetails.replaceChildren();
+      latestVersion.textContent = tr('updates.github.not_checked');
       feedback.textContent = tr('updates.github.checking');
       try {
         const latest = await request('/upgrade/check?' + new URLSearchParams({address:checkedAddress}));
         feedback.textContent = statusLabels[latest.state] || tr('updates.github.error_source');
-        if (latest.tag) {
+        const releaseSha = typeof latest.release === 'string' && /^[a-f0-9]{40}$/i.test(latest.release)
+          ? ' · ' + latest.release.slice(0, 12)
+          : '';
+        latestVersion.textContent = latest.tag
+          ? latest.tag + releaseSha
+          : tr('updates.github.unknown_version');
+        if (latest.artifact_size) {
           releaseDetails.append(description([
-            [tr('updates.github.tag'), latest.tag],
-            ...(latest.artifact_size ? [[tr('updates.artifact_size'), byteSize(latest.artifact_size)]] : []),
+            [tr('updates.artifact_size'), byteSize(latest.artifact_size)],
           ]));
         }
         if (latest.state === 'available') { candidate = {...latest, address:checkedAddress}; download.hidden = false; }
@@ -1585,6 +1596,7 @@
       download.hidden = true;
       check.disabled = !address.value.trim();
       feedback.textContent = '';
+      latestVersion.textContent = tr('updates.github.not_checked');
       releaseDetails.replaceChildren();
     });
     toolbar.append(check, download);
