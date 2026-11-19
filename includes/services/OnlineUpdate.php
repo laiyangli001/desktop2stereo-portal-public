@@ -540,6 +540,19 @@ final class OnlineUpdate
                 $prefix=rtrim(substr($header,345,155),"\0");
                 $rawPath=$prefix!==''?$prefix.'/'.$name:$name;
                 if(str_contains($rawPath,'\\'))throw new RuntimeException('update_archive_path_invalid');
+                if($sourceArchive&&$entries===1&&$rawPath==='pax_global_header'
+                    &&substr($header,156,1)==='g'&&trim(substr($header,157,100),"\0")===''){
+                    // Git archive writes a single global PAX comment identifying the commit.
+                    $sizeField=trim(str_replace("\0",' ',substr($header,124,12)));
+                    if(!preg_match('/^[0-7]+$/D',$sizeField)||octdec($sizeField)!==52){
+                        throw new RuntimeException('update_archive_path_invalid');
+                    }
+                    $record=$this->readTarBytes($handle,512);
+                    if(!preg_match('/^52 comment=[a-f0-9]{40}\n\x00{460}$/D',$record)){
+                        throw new RuntimeException('update_archive_path_invalid');
+                    }
+                    continue;
+                }
                 $archivePath=$rawPath;
                 if($sourceArchive){
                     $segments=explode('/',rtrim($rawPath,'/'));
