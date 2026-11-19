@@ -356,7 +356,7 @@ final class ReleaseInstaller
     private function copyTree(string $source,string $destination): void
     {
         if(!is_dir($source)||is_link($source)||file_exists($destination))throw new RuntimeException('update_install_candidate_invalid');
-        if(!mkdir($destination,0700,true))throw new RuntimeException('update_install_copy_failed');
+        if(!mkdir($destination,0755,true))throw new RuntimeException('update_install_copy_failed');
         $iterator=new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($source,FilesystemIterator::SKIP_DOTS),
             RecursiveIteratorIterator::SELF_FIRST,
@@ -366,11 +366,11 @@ final class ReleaseInstaller
             $target=$destination.DIRECTORY_SEPARATOR.$relative;
             if($item->isLink())throw new RuntimeException('update_install_candidate_invalid');
             if($item->isDir()){
-                if(!is_dir($target)&&!mkdir($target,0700))throw new RuntimeException('update_install_copy_failed');
+                if(!is_dir($target)&&!mkdir($target,0755))throw new RuntimeException('update_install_copy_failed');
                 continue;
             }
             if(!$item->isFile()||!copy($item->getPathname(),$target))throw new RuntimeException('update_install_copy_failed');
-            @chmod($target,0600);
+            @chmod($target,0644);
         }
     }
 

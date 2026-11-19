@@ -117,7 +117,7 @@ final class OnlineUpdate
         }
 
         $root=$this->stagingPath();
-        if(!is_dir($root)&&!mkdir($root,0700,true)&&!is_dir($root))throw new RuntimeException('update_staging_unavailable');
+        if(!is_dir($root)&&!mkdir($root,UpdateSharedPermissions::directoryMode(),true)&&!is_dir($root))throw new RuntimeException('update_staging_unavailable');
         if(!is_writable($root))throw new RuntimeException('update_staging_unavailable');
         $target=$root.DIRECTORY_SEPARATOR.$release;
         if(is_dir($target)){
@@ -126,7 +126,7 @@ final class OnlineUpdate
             return array_replace($existing,['reused'=>true]);
         }
         $temporary=$root.DIRECTORY_SEPARATOR.'.stage-'.$release.'-'.bin2hex(random_bytes(6));
-        if(!mkdir($temporary,0700,true))throw new RuntimeException('update_staging_unavailable');
+        if(!mkdir($temporary,UpdateSharedPermissions::directoryMode(),true))throw new RuntimeException('update_staging_unavailable');
         try{
             $this->write($temporary.DIRECTORY_SEPARATOR.'metadata.json',$metadataBody);
             $this->write($temporary.DIRECTORY_SEPARATOR.'metadata.sig',$signatureBody);
@@ -209,10 +209,10 @@ final class OnlineUpdate
         if(file_exists($candidateDirectory)||is_link($candidateDirectory))throw new RuntimeException('update_candidate_exists');
 
         $parent=dirname($candidateDirectory);
-        if(!is_dir($parent)&&!mkdir($parent,0700,true)&&!is_dir($parent))throw new RuntimeException('update_candidate_unavailable');
+        if(!is_dir($parent)&&!mkdir($parent,UpdateSharedPermissions::directoryMode(),true)&&!is_dir($parent))throw new RuntimeException('update_candidate_unavailable');
         if(!is_writable($parent))throw new RuntimeException('update_candidate_unavailable');
         $temporary=$candidateDirectory.'.preparing-'.bin2hex(random_bytes(6));
-        if(!mkdir($temporary,0700))throw new RuntimeException('update_candidate_unavailable');
+        if(!mkdir($temporary,UpdateSharedPermissions::directoryMode()))throw new RuntimeException('update_candidate_unavailable');
         $moved=false;
         try{
             if($isSource){
@@ -499,7 +499,7 @@ final class OnlineUpdate
             $written=stream_copy_to_stream($input,$output);
             fclose($input);fclose($output);
             if(!is_int($written)||$written!==$size)throw new RuntimeException('update_archive_extract_failed');
-            @chmod($absolute,0600);
+            @chmod($absolute,UpdateSharedPermissions::fileMode());
         }
         if(!$sourceArchive&&!is_file($destination.DIRECTORY_SEPARATOR.'release-manifest.json')){
             throw new RuntimeException('update_release_manifest_missing');
@@ -655,7 +655,7 @@ final class OnlineUpdate
             if(is_link($current)||(file_exists($current)&&!is_dir($current))){
                 throw new RuntimeException('update_archive_path_conflict');
             }
-            if(!is_dir($current)&&!mkdir($current,0700)&&!is_dir($current)){
+            if(!is_dir($current)&&!mkdir($current,UpdateSharedPermissions::directoryMode())&&!is_dir($current)){
                 throw new RuntimeException('update_archive_extract_failed');
             }
         }
@@ -675,7 +675,7 @@ final class OnlineUpdate
         if(!is_string($currentHash)||!is_string($candidateHash)||!hash_equals($currentHash,$candidateHash)){
             throw new RuntimeException('update_dependencies_changed');
         }
-        if(!mkdir($target,0700))throw new RuntimeException('update_candidate_unavailable');
+        if(!mkdir($target,UpdateSharedPermissions::directoryMode()))throw new RuntimeException('update_candidate_unavailable');
         $iterator=new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($source,FilesystemIterator::SKIP_DOTS),
             RecursiveIteratorIterator::SELF_FIRST,
@@ -685,13 +685,13 @@ final class OnlineUpdate
             $relative=substr($item->getPathname(),strlen($source)+1);
             $copyTo=$target.DIRECTORY_SEPARATOR.$relative;
             if($item->isDir()){
-                if(!is_dir($copyTo)&&!mkdir($copyTo,0700))throw new RuntimeException('update_dependencies_copy_failed');
+                if(!is_dir($copyTo)&&!mkdir($copyTo,UpdateSharedPermissions::directoryMode()))throw new RuntimeException('update_dependencies_copy_failed');
                 continue;
             }
             if(!$item->isFile()||!copy($item->getPathname(),$copyTo)){
                 throw new RuntimeException('update_dependencies_copy_failed');
             }
-            @chmod($copyTo,0600);
+            @chmod($copyTo,UpdateSharedPermissions::fileMode());
         }
     }
 
@@ -870,6 +870,6 @@ final class OnlineUpdate
     private function write(string $path,string $contents): void
     {
         if(file_put_contents($path,$contents,LOCK_EX)!==strlen($contents))throw new RuntimeException('update_staging_write_failed');
-        @chmod($path,0600);
+        @chmod($path,UpdateSharedPermissions::fileMode());
     }
 }

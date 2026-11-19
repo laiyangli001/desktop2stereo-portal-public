@@ -57,7 +57,7 @@ final readonly class ProductImages
             if((int)$product['lock_version']!==$expectedVersion||($draft&&$product['draft_json']===null)){
                 throw new Problem('record_changed',409);
             }
-            if(!is_dir($this->directory)&&!mkdir($this->directory,0700,true)&&!is_dir($this->directory)){
+            if(!is_dir($this->directory)&&!mkdir($this->directory,UpdateSharedPermissions::directoryMode(),true)&&!is_dir($this->directory)){
                 throw new Problem('product_image_storage_unavailable',503);
             }
             $file=$this->directory.DIRECTORY_SEPARATOR.$hash.'.png';
@@ -67,7 +67,7 @@ final readonly class ProductImages
                     if(file_put_contents($stage,$clean,LOCK_EX)!==strlen($clean)||!rename($stage,$file)){
                         throw new Problem('product_image_storage_unavailable',503);
                     }
-                    chmod($file,0600);
+                    chmod($file,UpdateSharedPermissions::fileMode());
                 }finally{if(is_file($stage))unlink($stage);}
             }
             if($draft){

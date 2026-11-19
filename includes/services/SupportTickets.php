@@ -206,7 +206,7 @@ final readonly class SupportTickets
             $id = bin2hex(random_bytes(16));
             $storage = hash('sha256',$id . ':' . bin2hex(random_bytes(24)));
             $path = $this->attachmentPath($storage,$now);
-            if (!is_dir(dirname($path)) && !mkdir(dirname($path),0700,true) && !is_dir(dirname($path))) {
+            if (!is_dir(dirname($path)) && !mkdir(dirname($path),UpdateSharedPermissions::directoryMode(),true) && !is_dir(dirname($path))) {
                 throw new Problem('attachment_storage_unavailable',503);
             }
             if (!move_uploaded_file($file['tmp_name'],$path)) {
@@ -215,7 +215,7 @@ final readonly class SupportTickets
                 }
                 @unlink($file['tmp_name']);
             }
-            chmod($path,0600);
+            chmod($path,UpdateSharedPermissions::fileMode());
             $hash = hash_file('sha256',$path);
             try {
                 $db->prepare('INSERT INTO portal_support_attachments

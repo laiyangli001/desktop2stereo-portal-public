@@ -59,12 +59,12 @@ final readonly class SupportRetentionManifests
             throw $error;
         }
         fclose($handle);
-        @chmod($temporary,0600);
+        @chmod($temporary,UpdateSharedPermissions::fileMode());
         if (!@rename($temporary,$path)) {
             @unlink($temporary);
             throw new RuntimeException('retention_manifest_publish_failed');
         }
-        @chmod($path,0600);
+        @chmod($path,UpdateSharedPermissions::fileMode());
         return $id;
     }
 
@@ -131,11 +131,11 @@ final readonly class SupportRetentionManifests
             if (!$create) {
                 return null;
             }
-            if (!mkdir($root,0700,true) && !is_dir($root)) {
+            if (!mkdir($root,UpdateSharedPermissions::directoryMode(),true) && !is_dir($root)) {
                 throw new RuntimeException('retention_manifest_storage_unavailable');
             }
         }
-        @chmod($root,0700);
+        @chmod($root,UpdateSharedPermissions::directoryMode());
         $resolved = realpath($root);
         if ($resolved === false || !is_dir($resolved)) {
             throw new RuntimeException('retention_manifest_storage_unavailable');
