@@ -115,7 +115,7 @@ try{
         $root,
         static function(string $candidateRoot,string $expectedRelease,int $now): array{
             $pdo=Database::fromEnvironment('D2S_MIGRATION_DB_');
-            return (new Migrator($pdo,$candidateRoot.DIRECTORY_SEPARATOR.'database'.DIRECTORY_SEPARATOR.'migrations'))->run();
+            return (new Migrator($pdo,$candidateRoot.DIRECTORY_SEPARATOR.'database'.DIRECTORY_SEPARATOR.'migrations', $candidateRoot))->run();
         },
         static fn(string $currentRoot,string $expectedRelease,int $now):array=>$healthAfterRestart($currentRoot,$expectedRelease,$now),
         $progress,

@@ -532,19 +532,25 @@ final readonly class LocaleSettings
     {
         $path = LocaleRegistry::snapshotPath();
         $directory = dirname($path);
-        if (!is_dir($directory) && !@mkdir($directory,0700,true) && !is_dir($directory)) {
+        if (!is_dir($directory) && !@mkdir($directory,$this->snapshotDirectoryMode(),true) && !is_dir($directory)) {
             throw new Problem('locale_snapshot_publish_failed', 503);
         }
         $priorActive = $this->activeSnapshot();
         if ($priorActive !== null && $priorActive['catalog_revision'] !== $manifest['catalog_revision']) {
             $historyDirectory = $directory.'/history';
-            if (!is_dir($historyDirectory) && !@mkdir($historyDirectory,0700,true) && !is_dir($historyDirectory)) {
+            if (!is_dir($historyDirectory) && !@mkdir($historyDirectory,$this->snapshotDirectoryMode(),true) && !is_dir($historyDirectory)) {
                 throw new Problem('locale_snapshot_publish_failed', 503);
             }
             $this->writeSnapshot($this->historyPath($priorActive['revision'], $priorActive['catalog_revision']), $priorActive);
         }
         $this->writeSnapshot($path, $manifest);
         $this->pruneCatalogHistory($manifest, $priorActive);
+    }
+
+    private function snapshotDirectoryMode(): int
+    {
+        $mode = UpdateSharedPermissions::directoryMode();
+        return ($mode & 02000) !== 0 ? $mode | 0020 : $mode;
     }
 
     private function writeSnapshot(string $path, array $manifest): void
@@ -555,7 +561,7 @@ final readonly class LocaleSettings
             if (@file_put_contents($temporary,$contents,LOCK_EX)!==strlen($contents) || !@rename($temporary,$path)) {
                 throw new Problem('locale_snapshot_publish_failed', 503);
             }
-            @chmod($path,0600);
+            @chmod($path,UpdateSharedPermissions::fileMode());
         } finally {
             if (is_file($temporary)) @unlink($temporary);
         }

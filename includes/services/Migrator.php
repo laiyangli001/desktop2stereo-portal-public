@@ -10,7 +10,7 @@ use Throwable;
 /** MySQL DDL auto-commits: journal attempts and stop on partial failures. */
 final class Migrator
 {
-    public function __construct(private PDO $pdo, private string $directory)
+    public function __construct(private PDO $pdo, private string $directory, private ?string $resourceRoot = null)
     {
     }
 
@@ -31,7 +31,7 @@ final class Migrator
             $localeMigration = $this->pdo->prepare('SELECT status FROM portal_migrations WHERE version=?');
             $localeMigration->execute(['0045_enable_all_locales.php']);
             if ($localeMigration->fetchColumn() === 'applied') {
-                (new LocaleSettings($this->pdo))->synchronizeSnapshotAfterMigration(time());
+                (new LocaleSettings($this->pdo, $this->resourceRoot))->synchronizeSnapshotAfterMigration(time());
             }
             return $applied;
         } finally {

@@ -25,7 +25,7 @@ final class UiCatalogPublisher
         $this->assertComplete($manifest, $resources);
         $revision = self::revisionOf($resources);
         $root = dirname(LocaleRegistry::snapshotPath()).'/catalogs';
-        if (!is_dir($root) && !@mkdir($root, 0700, true) && !is_dir($root)) {
+        if (!is_dir($root) && !@mkdir($root, getenv('D2S_UPDATE_SHARED_ACCESS') === '1' ? 02770 : 0700, true) && !is_dir($root)) {
             throw new Problem('locale_snapshot_publish_failed', 503);
         }
         $lock = @fopen($root.'/.publish.lock', 'c');
