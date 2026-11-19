@@ -1,0 +1,24 @@
+{
+  "name": "desktop2stereo-portal-ui",
+  "private": true,
+  "scripts": {
+    "build:i18n": "node frontend/build-i18n.mjs",
+    "report:locales": "node frontend/report-locales.mjs",
+    "test:i18n": "node tests/i18n-runtime.mjs",
+    "test:browser-i18n": "php tests/browser-i18n.php",
+    "test:browser-multilingual-content": "php tests/browser-multilingual-content.php",
+    "test:catalogs": "node tests/locale-catalogs.mjs",
+    "check:locales": "node frontend/check-locales.mjs",
+    "test:release-acceptance": "node frontend/run-release-acceptance.mjs"
+  },
+  "dependencies": {
+    "i18next": "27.0.1",
+    "i18next-icu": "2.7.0",
+    "intl-messageformat": "12.1.4"
+  },
+  "devDependencies": {
+    "@formatjs/icu-messageformat-parser": "3.5.22",
+    "acorn": "8.19.0",
+    "esbuild": "0.28.2"
+  }
+}

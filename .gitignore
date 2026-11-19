@@ -1,0 +1,10 @@
+/vendor/
+/.env*
+!/.env.example
+/storage/*
+!/storage/.gitkeep
+/node_modules/
+/.phpunit.cache/
+/.codegraph/
+/release-manifest.json
+__pycache__/

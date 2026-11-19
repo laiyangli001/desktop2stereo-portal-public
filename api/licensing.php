@@ -1,0 +1,91 @@
+<?php
+declare(strict_types=1);
+
+use D2S\domain\Problem;
+use D2S\repositories\Database;
+use D2S\services\Audit;
+use D2S\services\ClientLicensing;
+use D2S\services\CoreKeyWrapper;
+use D2S\services\HttpRequest;
+use D2S\services\LicenseCredentials;
+use D2S\services\LicenseOverview;
+use D2S\services\LicenseSigner;
+use D2S\services\WebSessions;
+use D2S\services\SigningKeys;
+
+$method = $_SERVER['REQUEST_METHOD'];
+$methods = ['/api/v2/license/keys'=>'GET','/api/v2/me/license'=>'GET','/api/v2/me/license/devices'=>'GET','/api/v2/me/license/session/logout'=>'POST',
+    '/api/v2/client/login'=>'POST','/api/v2/client/heartbeat'=>'POST','/api/v2/client/logout'=>'POST',
+    '/api/v2/admin/license-keys'=>'GET','/api/v2/admin/license-keys/activate'=>'POST',
+    '/api/v2/admin/license-keys/retire'=>'POST'];
+if (!isset($methods[$path])) { throw new Problem('not_found',404); }
+if ($methods[$path] !== $method) { throw new Problem('method_not_allowed',405); }
+if (str_starts_with($path,'/api/v2/admin/license-keys')) {
+    $db = Database::fromEnvironment();
+    $owner = HttpRequest::session('admin',new WebSessions($db),$method !== 'GET',time());
+    $keys = new SigningKeys($db,LicenseSigner::fromEnvironment());
+    $context = Audit::context($_SERVER);
+    if ($method === 'GET') {
+        $data = $keys->view($owner['id'],$context,time());
+    } elseif ($path === '/api/v2/admin/license-keys/activate') {
+        $input = HttpRequest::strings(HttpRequest::json(),['confirm_key_id','confirm_fingerprint']);
+        $keys->activate($owner['id'],$input['confirm_key_id'],$input['confirm_fingerprint'],$context,time());
+        $data = ['activated'=>true];
+    } else {
+        $input = HttpRequest::strings(HttpRequest::json(),['key_id']);
+        $keys->retire($owner['id'],$input['key_id'],$context,time());
+        $data = ['retired'=>true];
+    }
+} elseif ($method === 'GET' && $path === '/api/v2/license/keys') {
+    $data = ['keys'=>(new SigningKeys(Database::fromEnvironment(),LicenseSigner::fromEnvironment()))->publicKeys()];
+} else {
+    $db = Database::fromEnvironment();
+    $now = time();
+    $productInput = static function (mixed $value): string {
+        if (!is_string($value)) { throw new Problem('product_code_invalid'); }
+        return D2S\services\ProductCatalog::code($value);
+    };
+    $clientService = static fn(string $product): ClientLicensing => new ClientLicensing($db,
+        new LicenseCredentials(LicenseSigner::fromEnvironment(),CoreKeyWrapper::fromEnvironment($product),$product));
+    if ($method === 'GET' && $path === '/api/v2/me/license') {
+        $owner = HttpRequest::session('user',new WebSessions($db),false,$now);
+        $overview = new LicenseOverview($db);
+        $data = ['license'=>$overview->license($owner['id'],$productInput($_GET['product'] ?? 'desktop2stereo')),
+            'licenses'=>$overview->all($owner['id'],d2s_locale_code())];
+    } elseif ($method === 'GET' && $path === '/api/v2/me/license/devices') {
+        $owner = HttpRequest::session('user',new WebSessions($db),false,$now);
+        $data = (new LicenseOverview($db))->devices($owner['id'],$productInput($_GET['product'] ?? 'desktop2stereo'),d2s_locale_code());
+    } elseif ($method === 'POST' && $path === '/api/v2/me/license/session/logout') {
+        $owner = HttpRequest::session('user',new WebSessions($db),true,$now);
+        $input = HttpRequest::json();
+        if (!is_string($input['device_hash'] ?? null) || !is_int($input['session_version'] ?? null)) {
+            throw new Problem('client_session_invalid');
+        }
+        (new LicenseOverview($db))->logout($owner['id'],$input['device_hash'],$input['session_version'],Audit::context($_SERVER),$now,$productInput($input['product'] ?? 'desktop2stereo'));
+        $data = ['logged_out'=>true];
+    } elseif ($method === 'POST' && $path === '/api/v2/client/login') {
+        $input = HttpRequest::strings(HttpRequest::json(),['identifier','password','device_hash','device_public_key']);
+        $product = $productInput($input['product'] ?? 'desktop2stereo');
+        $service = $clientService($product);
+        $data = $service->login($input['identifier'],$input['password'],$input['device_hash'],$input['device_public_key'],Audit::context($_SERVER),$now,$product);
+    } elseif ($method === 'POST' && in_array($path,['/api/v2/client/heartbeat','/api/v2/client/logout'],true)) {
+        $input = HttpRequest::strings(HttpRequest::json(),['device_hash']);
+        if (!preg_match('/^Bearer ([a-f0-9]{64})$/D',$_SERVER['HTTP_AUTHORIZATION'] ?? '',$matches)) {
+            throw new Problem('client_session_invalid',401);
+        }
+        $query = $db->prepare('SELECT product FROM portal_client_sessions WHERE token_hash=?');
+        $query->execute([hash('sha256',$matches[1])]);
+        $product = $query->fetchColumn();
+        if ($product === false) { throw new Problem('client_session_replaced',401); }
+        $service = $clientService($product);
+        if ($path === '/api/v2/client/heartbeat') {
+            $data = $service->heartbeat($matches[1],$input['device_hash'],$now);
+        } else {
+            $service->logout($matches[1],$input['device_hash'],Audit::context($_SERVER),$now);
+            $data = ['logged_out'=>true];
+        }
+    } else {
+        throw new Problem('not_found',404);
+    }
+}
+echo json_encode(['success'=>true,'data'=>$data],JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);

@@ -1,0 +1,36 @@
+.help-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+.help-main {
+    flex: 1 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+    padding-block: clamp(28px, 4vw, 52px);
+}
+.help-heading { margin-bottom: 24px; }
+.help-heading h1, .help-article h1 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+.help-heading p, .help-article > .portal-help { margin: 10px 0 0; color: var(--df-text-2); }
+.help-main .portal-card { margin: 0; min-width: 0; }
+.help-empty p { margin: 0; color: var(--df-text-2); }
+.help-articles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 25rem), 1fr));
+    gap: 16px;
+}
+.help-card .portal-eyebrow, .help-article .portal-eyebrow { margin: 0 0 8px; }
+.help-card h2 { margin: 0; font-size: 20px; line-height: 1.45; }
+.help-card h2 a:hover, .help-back:hover { text-decoration: underline; }
+.help-card p:not(.portal-eyebrow) { margin: 8px 0 0; color: var(--df-text-2); line-height: 1.65; }
+.help-card, .help-article { overflow-wrap: anywhere; }
+.help-back { display: inline-block; margin-bottom: 14px; }
+.help-main .help-article { max-width: 56rem; }
+.help-article .operation-article { margin-top: 20px; }
+.help-article .operation-article img { max-width: 100%; height: auto; }

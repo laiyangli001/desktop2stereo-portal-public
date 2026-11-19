@@ -1,0 +1,206 @@
+/* Shared administration controls; public pages and rich-text toolbar keep their own sizing. */
+body:has(> .admin-sidebar) { --admin-control-height: 42px; }
+body:has(> .admin-sidebar) .portal-main [hidden]:not([hidden="until-found"]) {
+    display: none !important;
+}
+body:has(> .admin-sidebar) :is(.portal-main, .operation-dialog) p[role="status"]:empty {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    min-block-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+body:has(> .admin-sidebar) :is(.portal-main, dialog) table :is(th, td) {
+    text-align: start;
+}
+body:has(> .admin-sidebar) :is(.portal-main, .operation-dialog) :is(input, select, textarea) {
+    box-sizing: border-box;
+    max-inline-size: 100%;
+    min-inline-size: 0;
+    border: 1px solid var(--df-line);
+    border-radius: 7px;
+    background: var(--df-card);
+    color: var(--df-text);
+    font: inherit;
+    font-size: 14px;
+}
+body:has(> .admin-sidebar) :is(.portal-main, .operation-dialog) :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), select) {
+    block-size: var(--admin-control-height);
+    min-block-size: var(--admin-control-height);
+    padding: 9px 12px;
+    line-height: 22px;
+}
+body:has(> .admin-sidebar) :is(.portal-main, .operation-dialog) input:not([type="checkbox"], [type="radio"], [type="hidden"]) {
+    inline-size: 100%;
+    max-inline-size: 36rem;
+}
+body:has(> .admin-sidebar) :is(.portal-main, .operation-dialog) select {
+    inline-size: 16rem;
+    min-inline-size: 0;
+    max-inline-size: min(100%, 26rem);
+    padding-inline-end: 32px;
+    justify-self: start;
+    appearance: auto;
+}
+body:has(> .admin-sidebar) :is(.portal-main, .operation-dialog) input:is([type="date"], [type="datetime-local"], [type="time"]) {
+    inline-size: min(100%, 15.5rem);
+}
+body:has(> .admin-sidebar) :is(.portal-main, .operation-dialog) input[type="number"] {
+    inline-size: min(100%, 12rem);
+}
+body:has(> .admin-sidebar) :is(.portal-main, .operation-dialog) textarea {
+    inline-size: 100%;
+    max-inline-size: 68rem;
+    padding: 12px;
+    line-height: 1.7;
+    resize: vertical;
+}
+body:has(> .admin-sidebar) :is(.portal-main, .operation-dialog) input:is([type="checkbox"], [type="radio"]) {
+    inline-size: 18px;
+    block-size: 18px;
+    min-block-size: 18px;
+    margin: 0;
+    padding: 0;
+    flex: 0 0 18px;
+    accent-color: var(--df-accent);
+}
+body:has(> .admin-sidebar) :is(.portal-main, .operation-dialog) :is(button:not(.ql-toolbar button), a.admin-control-link, .operation-filters > a) {
+    box-sizing: border-box;
+    inline-size: fit-content;
+    max-inline-size: 100%;
+    min-inline-size: 0;
+    min-block-size: var(--admin-control-height);
+    margin: 0;
+    padding: 8px 16px;
+    border-radius: 7px;
+    font: inherit;
+    font-size: 14px;
+    line-height: 22px;
+    flex: 0 0 auto;
+    justify-self: start;
+    white-space: normal;
+}
+body:has(> .admin-sidebar) :is(.operation-filters, .account-heading.compact, .account-control-search, .locale-package-field-row, .announcement-toolbar) > :is(button, a.admin-control-link, .site-secondary) {
+    align-self: end;
+    margin-block: 0;
+}
+body:has(> .admin-sidebar) :is(.admin-page-actions, .admin-form-actions, .operation-form footer, .operation-panel-actions) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+}
+body:has(> .admin-sidebar) :is(.account-heading.compact, .operation-filters) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 14px;
+}
+body:has(> .admin-sidebar) :is(.account-heading.compact, .operation-filters) > label {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    min-inline-size: 0;
+    flex: 0 1 auto;
+}
+body:has(> .admin-sidebar) :is(.operation-form, .content-form, .platform-form-grid, .portal-settings-grid) > label {
+    min-inline-size: 0;
+    align-content: start;
+}
+body:has(> .admin-sidebar) :is(.operation-form, .content-form, .platform-form-grid, .portal-settings-grid) label > :is(input, select, textarea) {
+    margin-block-start: 6px;
+}
+body:has(> .admin-sidebar) .publication-languages {
+    min-inline-size: 0;
+    margin: 22px 0;
+    padding: 16px;
+    border: 1px solid var(--df-line);
+    border-radius: 8px;
+}
+body:has(> .admin-sidebar) .publication-languages legend { padding: 0 6px; font-weight: 600; }
+body:has(> .admin-sidebar) :is(#announcement-publication-targets, #policy-translation-target) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+}
+body:has(> .admin-sidebar) :is(#announcement-publication-targets, #policy-translation-target) label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0;
+    font-weight: 400;
+}
+body:has(> .admin-sidebar) .publication-progress { min-inline-size: 0; overflow-wrap: anywhere; }
+body:has(> .admin-sidebar) .publication-progress progress { inline-size: min(100%, 24rem); }
+body:has(> .admin-sidebar) .publication-progress p { margin: 6px 0; }
+body:has(> .admin-sidebar) :is(.admin-form-actions, .operation-form footer) .danger-button { margin-inline-start: auto; }
+body:has(> .admin-sidebar) :is(.admin-form-actions, .operation-form footer) button:not(.portal-primary) {
+    background: var(--df-card);
+    color: var(--df-text);
+    border-color: var(--df-line);
+}
+body:has(> .admin-sidebar) .danger-button { color: var(--df-danger); }
+@media (max-width: 600px) {
+    body:has(> .admin-sidebar) .operation-filters > label { flex: 1 1 12rem; }
+    body:has(> .admin-sidebar) .admin-page-heading { gap: 14px; }
+}
+
+/* Keep the fixed shell dimensions stable when portal styles load afterwards. */
+body:has(> .admin-sidebar) .admin-topbar { height:64px; min-height:64px; padding:0 20px 0 0; flex-wrap:nowrap; }
+body:has(> .admin-sidebar) .admin-page-heading h1 { font-size:clamp(26px,2.3vw,34px); }
+body:has(> .admin-sidebar) .admin-topbar-tools { flex-wrap:nowrap; }
+body:has(> .admin-sidebar) .admin-topbar-tools :is(.locale-toggle,.theme-switch,.admin-logout) {
+    min-height:38px; height:38px; line-height:20px; padding:8px 12px; font-size:14px;
+}
+@media(max-width:1023px) {
+    body:has(> .admin-sidebar) .admin-topbar { height:60px; min-height:60px; padding-inline-end:12px; gap:8px; }
+    body:has(> .admin-sidebar) .admin-topbar-brand { padding-inline-start:12px; gap:8px; }
+}
+@media(max-width:680px) {
+    body:has(> .admin-sidebar) .admin-topbar-tools .language-switch { display:none; }
+    body:has(> .admin-sidebar) .admin-topbar-tools .theme-switch { width:38px; padding:0; justify-content:center; }
+    body:has(> .admin-sidebar) [data-theme-label] { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+    body:has(> .admin-sidebar) .admin-topbar .portal-brand { font-size:14px; }
+}
+
+body:has(> .admin-sidebar) :is(.portal-main,.operation-dialog) button:not(.ql-toolbar button,.portal-primary,.danger-button,[aria-selected="true"],[aria-pressed="true"]) {
+    border:1px solid var(--df-line); background:var(--df-card); color:var(--df-text);
+}
+body:has(> .admin-sidebar) :is(.admin-form-actions,.operation-form footer,.announcement-actions) button.danger-button {
+    border:1px solid var(--df-danger); background:var(--df-card); color:var(--df-danger);
+}
+
+body:has(> .admin-sidebar) .announcement-compose-panel .announcement-date-picker { display:inline-flex; position:relative; inline-size:248px; max-inline-size:100%; }
+body:has(> .admin-sidebar) .announcement-compose-panel .announcement-date-picker > input[type="text"] {
+    flex:1; inline-size:calc(100% - 42px); max-inline-size:none; min-inline-size:0; border-start-end-radius:0; border-end-end-radius:0; margin:0;
+}
+body:has(> .admin-sidebar) .announcement-compose-panel .announcement-date-picker > button {
+    inline-size:42px; min-inline-size:42px; block-size:42px; padding:0; border-inline-start:0; border-start-start-radius:0; border-end-start-radius:0; display:inline-grid; place-items:center;
+}
+.announcement-calendar-toggle svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; }
+.announcement-excerpt { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:6px; color:var(--df-muted); font-size:12px; max-inline-size:100%; }
+.announcement-table { table-layout:fixed; }
+.announcement-table th { white-space:normal; overflow-wrap:anywhere; }
+.announcement-table th:nth-child(1) { width:26%; }
+.announcement-table th:nth-child(2) { width:10%; }
+.announcement-table th:nth-child(3) { width:11%; }
+.announcement-table th:nth-child(4) { width:16%; }
+.announcement-table th:nth-child(5) { width:11%; }
+.announcement-table th:nth-child(6) { width:26%; }
+.announcement-table td:nth-child(4) { font-size:12px; }
+.announcement-status[data-status="review"] { background:color-mix(in srgb,var(--df-warn) 12%,transparent); color:var(--df-warn); }
+.announcement-language-popover { width:fit-content; }
+.announcement-language-popover summary { display:inline-flex; align-items:center; justify-content:center; gap:10px; min-width:52px; height:42px; padding:0 10px; border:1px solid var(--df-line); border-radius:7px; list-style:none; cursor:pointer; font-variant-numeric:tabular-nums; }
+.announcement-language-popover summary::-webkit-details-marker { display:none; }
+.announcement-language-popover[open] summary { border-color:var(--df-accent); color:var(--df-accent); }
+.announcement-language-menu { position:fixed; z-index:1600; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; width:min(260px,calc(100vw - 32px)); max-height:240px; overflow:auto; padding:16px; border:1px solid var(--df-line); border-radius:9px; background:var(--df-card); color:var(--df-text); box-shadow:0 12px 36px rgba(12,26,38,.15); font-size:13px; }
+.announcement-language-menu > strong { grid-column:1/-1; }
+.announcement-title-copy { min-width:0; }
+.announcement-table th { text-align:start; }
+body:has(> .admin-sidebar) .portal-main .announcement-actions :is(button.danger-button,a.admin-control-link) { padding-inline:10px; }
+.announcement-language-popover summary:focus-visible { outline:3px solid var(--df-accent-2); outline-offset:3px; }

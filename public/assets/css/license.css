@@ -1,0 +1,35 @@
+.account-main { max-width: 1120px; }
+#license-app [hidden] { display: none !important; }
+#license-overview { margin-bottom: 20px; }
+.account-main .user-nav { margin: 0 0 32px; padding-bottom: 14px; border-bottom: 1px solid var(--df-line); }
+.account-heading { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.account-heading h1 { margin: 4px 0; }
+.account-heading.compact h2 { margin: 0; }
+.account-heading button, .license-hero .site-secondary { min-height: 40px; padding: 9px 16px; border: 1px solid var(--df-accent); border-radius: 6px; background: #fff; color: var(--df-accent); font: inherit; cursor: pointer; }
+.license-hero { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; border-inline-start: 5px solid var(--df-accent); }
+.license-hero h2 { margin: 6px 0; font-size: 30px; }
+.license-label { color: var(--df-accent); font-weight: 800; letter-spacing: .12em; font-size: 12px; }
+.license-product-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; max-width: 34rem; margin-bottom: 18px; }
+.license-product-picker select { flex: 1 1 16rem; min-width: 0; max-width: 28rem; height: 42px; padding: 8px 12px; border: 1px solid var(--df-line); border-radius: 6px; font: inherit; background: transparent; color: inherit; }
+.license-overview-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,240px),1fr)); gap: 12px; }
+.license-overview-card { display: grid; gap: 6px; min-width: 0; padding: 16px; border: 1px solid var(--df-line); border-radius: 8px; text-align: start; font: inherit; color: inherit; background: transparent; cursor: pointer; overflow-wrap: anywhere; }
+.license-overview-card[aria-pressed="true"] { border-color: var(--df-accent); background: var(--df-accent-soft); }
+.license-overview-card:focus-visible { outline: 2px solid var(--df-accent); outline-offset: 3px; }
+.license-overview-card small { color: var(--df-muted); }
+.license-label { overflow-wrap: anywhere; }
+.license-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; margin-top: 20px; }
+.license-grid .portal-card, .account-main > .portal-card { margin-top: 0; }
+.license-facts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.license-facts div { padding: 12px; background: var(--df-accent-soft); border-radius: 7px; }
+.license-facts dt { color: var(--df-muted); font-size: 12px; }
+.license-facts dd { margin: 4px 0 0; font-weight: 700; }
+.device-list { display: grid; gap: 10px; }
+.device-item { padding: 14px; border: 1px solid var(--df-line); border-radius: 8px; background: #fff; }
+.device-item p { margin: 4px 0 0; color: var(--df-text-2); }
+#license-message { min-height: 24px; color: var(--df-danger); }
+@media (max-width: 720px) {
+  .license-grid { grid-template-columns: 1fr; }
+  .account-main { padding: 0 18px; }
+  .account-main .user-nav { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .license-facts { grid-template-columns: 1fr; }
+}

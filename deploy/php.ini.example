@@ -1,0 +1,8 @@
+; Apply through the PHP-FPM pool or a controlled php.ini, then reload PHP-FPM.
+upload_max_filesize = 6M
+post_max_size = 7M
+max_file_uploads = 1
+
+; Never enable display_errors in production.
+display_errors = Off
+log_errors = On

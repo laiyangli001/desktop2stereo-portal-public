@@ -1,0 +1,36 @@
+# Install only with the real production paths and restricted environment.
+# Cron does not load .env. Inject the same restricted variables used by the CLI/PHP-FPM.
+# Set PHP_BIN, APP_DIR and LOG_DIR below to verified absolute paths.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+PHP_BIN=/usr/bin/php
+APP_DIR=/www/wwwroot/desktop2stereo-portal/current
+LOG_DIR=/www/wwwlogs/desktop2stereo-portal
+TASK_LOG_DIR=/www/wwwroot/desktop2stereo-portal/shared/task-logs
+TASK_LOCK_DIR=/run/desktop2stereo-portal
+
+# The runner uses a non-blocking per-task lock. Exit 0 is success, 75 means the
+# previous run is still active, and 1/2 requires monitoring or manual review.
+*/15 * * * * D2S_TASK_LOG_DIR=$TASK_LOG_DIR D2S_TASK_LOCK_DIR=$TASK_LOCK_DIR $PHP_BIN $APP_DIR/bin/run-task.php --task=refresh-release >> $LOG_DIR/release-refresh.log 2>&1
+* * * * * D2S_TASK_LOG_DIR=$TASK_LOG_DIR D2S_TASK_LOCK_DIR=$TASK_LOCK_DIR $PHP_BIN $APP_DIR/bin/run-task.php --task=deliver >> $LOG_DIR/delivery.log 2>&1
+* * * * * D2S_TASK_LOG_DIR=$TASK_LOG_DIR D2S_TASK_LOCK_DIR=$TASK_LOCK_DIR $PHP_BIN $APP_DIR/bin/run-task.php --task=notify-transactions >> $LOG_DIR/transaction-notifications.log 2>&1
+# Enable only after EdgeOne credentials, public cache rules and session isolation are accepted.
+# * * * * * D2S_TASK_LOG_DIR=$TASK_LOG_DIR D2S_TASK_LOCK_DIR=$TASK_LOCK_DIR $PHP_BIN $APP_DIR/bin/run-task.php --task=purge-edgeone-cache >> $LOG_DIR/edgeone-cache-purge.log 2>&1
+*/5 * * * * D2S_TASK_LOG_DIR=$TASK_LOG_DIR D2S_TASK_LOCK_DIR=$TASK_LOCK_DIR $PHP_BIN $APP_DIR/bin/run-task.php --task=alipay-reconcile >> $LOG_DIR/alipay-reconcile.log 2>&1
+*/5 * * * * D2S_TASK_LOG_DIR=$TASK_LOG_DIR D2S_TASK_LOCK_DIR=$TASK_LOCK_DIR $PHP_BIN $APP_DIR/bin/run-task.php --task=wechat-reconcile >> $LOG_DIR/wechat-reconcile.log 2>&1
+*/10 * * * * D2S_TASK_LOG_DIR=$TASK_LOG_DIR D2S_TASK_LOCK_DIR=$TASK_LOCK_DIR $PHP_BIN $APP_DIR/bin/run-task.php --task=alipay-refunds >> $LOG_DIR/alipay-refunds.log 2>&1
+*/10 * * * * D2S_TASK_LOG_DIR=$TASK_LOG_DIR D2S_TASK_LOCK_DIR=$TASK_LOCK_DIR $PHP_BIN $APP_DIR/bin/run-task.php --task=wechat-refunds >> $LOG_DIR/wechat-refunds.log 2>&1
+17 3 * * * D2S_TASK_LOG_DIR=$TASK_LOG_DIR D2S_TASK_LOCK_DIR=$TASK_LOCK_DIR $PHP_BIN $APP_DIR/bin/run-task.php --task=prune-support -- --apply >> $LOG_DIR/support-retention.log 2>&1
+37 3 * * * D2S_TASK_LOG_DIR=$TASK_LOG_DIR D2S_TASK_LOCK_DIR=$TASK_LOCK_DIR $PHP_BIN $APP_DIR/bin/run-task.php --task=prune-login-history -- --apply >> $LOG_DIR/login-history-retention.log 2>&1
+
+# Exit 0 means all required scheduled tasks are healthy; exit 1 identifies
+# missing, failed, stale or invalid logs and can be wired to monitoring.
+*/15 * * * * D2S_TASK_LOG_DIR=$TASK_LOG_DIR $PHP_BIN $APP_DIR/bin/check-task-health.php >> $LOG_DIR/task-health.log 2>&1
+
+# Enable after D2S_NTP_SERVERS and quorum are verified; exit 1 alerts on offset quorum failure.
+# */15 * * * * $PHP_BIN $APP_DIR/bin/check-clock.php >> $LOG_DIR/ntp-clock.log 2>&1
+
+# Replace BACKUP_ROOT only after the production private/offsite backup path,
+# retention account, permissions and restore drill have been accepted.
+# 15 2 * * * D2S_TASK_LOG_DIR=$TASK_LOG_DIR D2S_TASK_LOCK_DIR=$TASK_LOCK_DIR $PHP_BIN $APP_DIR/bin/run-task.php --task=backup -- --output=/BACKUP_ROOT/desktop2stereo-$(date +\%Y\%m\%d) >> $LOG_DIR/backup.log 2>&1
+# 30 4 * * * D2S_TASK_LOG_DIR=$TASK_LOG_DIR D2S_TASK_LOCK_DIR=$TASK_LOCK_DIR $PHP_BIN $APP_DIR/bin/run-task.php --task=verify-backup -- --backup=/BACKUP_ROOT/desktop2stereo-$(date -d yesterday +\%Y\%m\%d) >> $LOG_DIR/backup-verify.log 2>&1

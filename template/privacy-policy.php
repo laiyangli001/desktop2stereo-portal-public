@@ -1,0 +1,54 @@
+<?php
+declare(strict_types=1);
+$uiNamespaces = array_values(array_unique([...($uiNamespaces ?? []), 'public_pages']));
+$legacyDomTranslation = false;
+$site=$siteData['site'];
+$legacyDomTranslation = false;
+$isEn=d2s_language()==='en';
+$policyTranslation = is_array($policyTranslation ?? null) ? $policyTranslation : null;
+$policyTitle = (string)($policyTranslation['title'] ?? '') ?: d2s_tr('public_pages.privacy.title');
+$policyVersion = (string)($policyTranslation['version'] ?? $site['privacy_version']);
+$policyEffectiveDate = (string)($policyTranslation['effective_date'] ?? $site['privacy_effective']);
+$policyContentLocale = (string)($policyTranslation['locale'] ?? ($isEn ? 'en' : 'zh-Hans'));
+$policyParagraphs = $policyTranslation === null ? [] : (preg_split('/\\R{2,}/u', trim((string)$policyTranslation['body'])) ?: []);
+$sections = \D2S\services\PolicyText::sections('PRIVACY',$policyContentLocale,$site);
+?>
+<!doctype html>
+<html lang="<?= d2s_escape(d2s_locale_code()) ?>" dir="<?= d2s_escape(d2s_locale_context()['direction']) ?>">
+<head>
+    <?php $seoPath=$path; require D2S_ROOT.'/template/partials/seo-head.php'; ?>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><?= d2s_escape($policyTitle) ?> · <?= d2s_escape($site['site_name']) ?></title>
+    <link rel="stylesheet" href="/assets/css/commerce.css">
+    <link rel="stylesheet" href="/assets/css/portal.css">
+    <link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body>
+<?php require D2S_ROOT.'/template/partials/site-header.php'; ?>
+<main class="legal-main">
+    <p class="portal-eyebrow"><?= d2s_tr('public_pages.privacy.eyebrow') ?></p>
+    <h1><?= d2s_escape($policyTitle) ?></h1>
+    <p class="legal-meta"><?= d2s_tr('public_pages.privacy.version') ?> <?= d2s_escape($policyVersion) ?><?php if($site['privacy_effective']!==''): ?> · <?= d2s_tr('public_pages.privacy.effective_date') ?> <?= d2s_escape($policyEffectiveDate) ?><?php endif ?></p>
+    <?php if($policyTranslation!==null&&($policyTranslation['fallback']??false)): ?><p class="portal-help" role="status"><?= d2s_tr('common.content.unavailable',['language'=>$policyTranslation['locale_name']??$policyContentLocale]) ?></p><?php endif ?>
+    <article class="portal-card legal-card" lang="<?= d2s_escape($policyContentLocale) ?>" translate="no">
+        <?php if($policyTranslation!==null): ?>
+            <?php foreach($policyParagraphs as $paragraph):
+                $parts=preg_split('/\\R/u',trim($paragraph),2)?:[];
+                if(isset($parts[1])&&preg_match('/^[0-9]+\\.\\s*/u',trim($parts[0]))): ?>
+                <section>
+                    <h2><?= d2s_escape((string)preg_replace('/^[0-9]+\\.\\s*/u','',trim($parts[0]))) ?></h2>
+                    <p><?= nl2br(d2s_escape(trim($parts[1]))) ?></p>
+                </section>
+            <?php else: ?>
+                <p><?= nl2br(d2s_escape(trim($paragraph))) ?></p>
+            <?php endif; endforeach ?>
+        <?php else: ?>
+            <?php foreach($sections as $index=>[$heading,$body]): ?>
+                <section><h2><?= ($index+1) ?>. <?= d2s_escape($heading) ?></h2><p><?= nl2br(d2s_escape($body)) ?></p></section>
+            <?php endforeach ?>
+        <?php endif ?>
+    </article>
+</main>
+<?php require D2S_ROOT.'/template/partials/site-footer.php'; ?>
+</body>
+</html>

@@ -1,0 +1,50 @@
+/* Account commerce pages share the portal's colors and native form controls. */
+.shop-shell { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 32px; max-width: 1120px; }
+.shop-nav { display: flex; flex-direction: column; gap: 8px; padding-top: 24px; }
+.shop-nav a { padding: 12px; border-radius: 8px; }
+.shop-nav a:hover { background: var(--df-accent-soft); }
+.shop-nav [aria-current] { background: var(--df-accent-soft); color: var(--df-accent); font-weight: 700; }
+.shop-content { min-width: 0; }
+.shop-content h1 { margin-bottom: 12px; }
+.shop-content h2 { font-size: 24px; margin-top: 0; }
+.shop-content .portal-card { margin-top: 24px; }
+.shop-content button { margin-top: 16px; }
+.shop-product { width: 100%; max-width: none; border-top: 4px solid var(--df-accent); }
+.shop-product li { margin: 12px 0; }
+.shop-price { font-size: 36px; font-weight: 700; margin: 16px 0; }
+.product-catalog { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 24px; }
+.product-catalog .shop-product { display: flex; flex-direction: column; min-width: 0; margin: 0; }
+.product-catalog-image { display: block; width: 100%; height: auto; aspect-ratio: 8 / 5; object-fit: contain; border-radius: 10px; margin-bottom: 20px; }
+.product-catalog-description { white-space: pre-line; overflow-wrap: anywhere; }
+.product-catalog-prices { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: auto; padding-top: 16px; }
+.product-catalog .shop-price { font-size: 24px; margin: 0 0 20px; }
+.product-catalog .portal-primary { display: inline-flex; align-items: center; justify-content: center; align-self: flex-start; width: auto; min-height: 42px; padding: 10px 16px; border-radius: 8px; background: var(--df-accent); color: #fff; font-weight: 600; text-decoration: none; }
+.product-catalog .portal-primary:hover { filter: brightness(1.08); }
+.product-catalog .portal-primary:focus-visible { outline: 2px solid var(--df-accent); outline-offset: 3px; }
+.product-catalog > article > .portal-help { display: flex; align-items: center; min-height: 42px; margin: 0; }
+.product-downloads { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--df-line); }
+.product-download-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.product-download-links a { display: inline-flex; align-items: center; min-height: 42px; padding: 8px 14px; border-radius: 7px; font-weight: 600; }
+.product-downloads p { margin: 8px 0 0; }
+.shop-history { padding-inline-start: 20px; overflow-wrap: anywhere; }
+.price-form + .price-form { border-top: 1px solid var(--df-line); margin-top: 24px; padding-top: 8px; }
+#commerce-message { min-height: 24px; overflow-wrap: anywhere; }
+#payment-options { margin-top: 20px; padding: 12px; border: 1px solid var(--df-line); border-radius: 8px; }
+#payment-options label { display: flex; align-items: center; gap: 10px; padding: 10px; margin: 0; }
+#payment-options input { width: auto; }
+#payment-options img { width: 26px; height: 26px; }
+#recharge-options { margin-top: 20px; padding: 12px; border: 1px solid var(--df-line); border-radius: 8px; }
+#recharge-options label { display: flex; align-items: center; gap: 10px; padding: 10px; margin: 0; }
+#recharge-options input { width: auto; }
+#recharge-options img { width: 26px; height: 26px; }
+.cashier-frame { max-width: 100%; overflow-x: auto; margin-top: 16px; }
+.cashier-frame iframe { display: block; border: 0; }
+.wechat-code { width: min(100%, 300px); margin: 20px auto; padding: 12px; background: #fff; }
+.wechat-code svg { display: block; width: 100%; height: auto; }
+#wechat-cashier { border-top: 1px solid var(--df-line); padding-top: 20px; }
+[hidden] { display: none !important; }
+@media (max-width: 700px) {
+  .shop-shell { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .shop-nav { flex-direction: row; flex-wrap: wrap; padding-top: 0; }
+  body:has(> .support-widget) .shop-shell:is([data-commerce-page="shop"], [data-commerce-page="wallet"]) { padding-bottom: 200px; }
+}

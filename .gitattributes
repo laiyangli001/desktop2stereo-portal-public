@@ -1,0 +1,16 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+
+# Keep development and acceptance records in the repository, outside source archives.
+/AGENTS.md export-ignore
+/tests export-ignore
+/docs/P[1-7]-*.md export-ignore
+/docs/SEC-*.md export-ignore
+/docs/IMPLEMENTATION.md export-ignore
+/docs/admin-page-review-*.md export-ignore
+/docs/legacy-*.md export-ignore
+/docs/codegraph.md export-ignore
+/docs/*implementation*.md export-ignore
+/docs/网站PHP重构计划书.md export-ignore

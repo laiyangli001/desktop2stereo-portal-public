@@ -1,0 +1,4 @@
+#wechat-settings-form textarea{box-sizing:border-box;width:100%;min-width:0;padding:11px 12px;border:1px solid var(--df-line);border-radius:6px;background:#fff;color:var(--df-text);font:inherit;resize:vertical}
+#wechat-settings-form textarea:focus-visible{outline:3px solid var(--df-accent-2);outline-offset:3px}
+#wechat-settings-form .portal-settings-grid>div{min-width:0}
+#wechat-message{min-height:24px}

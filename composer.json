@@ -1,0 +1,58 @@
+{
+  "name": "tulishisoft/desktop2stereo-portal",
+  "description": "Desktop2Stereo software commerce, account licensing and private support portal",
+  "type": "project",
+  "require": {
+    "php": "~8.4.0",
+    "ext-curl": "*",
+    "ext-dom": "*",
+    "ext-gd": "*",
+    "ext-intl": "*",
+    "ext-mbstring": "*",
+    "ext-openssl": "*",
+    "ext-pdo": "*",
+    "ext-pdo_mysql": "*",
+    "ext-sodium": "*",
+    "ezyang/htmlpurifier": "^4.18",
+    "maxmind-db/reader": "^1.14",
+    "phpmailer/phpmailer": "^7.0",
+    "symfony/translation": "^7.4",
+    "tencentcloud/ses": "^3.0",
+    "tencentcloud/sms": "^3.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "D2S\\": "includes/"
+    }
+  },
+  "scripts": {
+    "test": "@php tests/run.php",
+    "test:i18n": "@php tests/i18n-foundation.php",
+    "test:i18n-publisher": "@php tests/ui-catalog-publisher.php",
+    "test:article-translations": "@php tests/article-translations.php",
+    "test:translation-source-hashes": "@php tests/translation-source-hashes.php",
+    "test:translation-jobs": "@php tests/translation-jobs.php",
+    "test:translation-glossary": "@php tests/translation-glossary.php",
+    "test:deepl-provider": "@php tests/deepl-provider.php",
+    "test:locale-switch": "@php tests/browser-locale-switch.php",
+    "test:localized-operations": "@php tests/localized-operations.php",
+    "test:article-rich-text": "@php tests/article-rich-text.php",
+    "test:dependencies": "@php tests/dependencies.php",
+    "test:docs-links": "@php tests/docs-links.php",
+    "test:headers": "@php tests/security-headers.php",
+    "test:mysql": "@php tests/mysql.php",
+    "test:upgrade": "@php tests/upgrade.php",
+    "test:accounts": "@php tests/accounts.php",
+    "test:delivery-settings": "@php tests/delivery-settings.php",
+    "test:browser": "@php tests/browser.php",
+    "test:license-crypto": "@php tests/license-crypto.php",
+    "test:licensing": "@php tests/licensing.php",
+    "test:signing-keys": "@php tests/signing-keys.php",
+    "test:license-cross": "@php tests/license-crypto.php --cross",
+    "test:client-portal": "@php tests/client-portal.php"
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": false
+  }
+}

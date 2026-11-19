@@ -1,0 +1,16 @@
+{
+  "default_locale": "zh-Hans",
+  "locales": [
+    {"code":"zh-Hans","url_prefix":"zh-hans","native_name":"简体中文","direction":"ltr","enabled":true,"public_enabled":true,"fallback_locales":[],"aliases":["zh","zh-CN","zh_CN","zh-Hans","zh_Hans","zhCN"]},
+    {"code":"zh-Hant","url_prefix":"zh-hant","native_name":"繁體中文","direction":"ltr","enabled":true,"public_enabled":true,"fallback_locales":["zh-Hans"],"aliases":["zh-TW","zh_TW","zh-Hant","zh_Hant","zhTW"]},
+    {"code":"en","url_prefix":"en","native_name":"English","direction":"ltr","enabled":true,"public_enabled":true,"fallback_locales":["zh-Hans"],"aliases":["en-US","en_GB","en-GB"]},
+    {"code":"de","url_prefix":"de","native_name":"Deutsch","direction":"ltr","enabled":true,"public_enabled":true,"fallback_locales":["en","zh-Hans"],"aliases":["de-DE"]},
+    {"code":"fr","url_prefix":"fr","native_name":"Français","direction":"ltr","enabled":true,"public_enabled":true,"fallback_locales":["en","zh-Hans"],"aliases":["fr-FR"]},
+    {"code":"es","url_prefix":"es","native_name":"Español","direction":"ltr","enabled":true,"public_enabled":true,"fallback_locales":["en","zh-Hans"],"aliases":["es-ES"]},
+    {"code":"pt","url_prefix":"pt","native_name":"Português","direction":"ltr","enabled":true,"public_enabled":true,"fallback_locales":["en","zh-Hans"],"aliases":["pt-PT","pt-BR"]},
+    {"code":"ru","url_prefix":"ru","native_name":"Русский","direction":"ltr","enabled":true,"public_enabled":true,"fallback_locales":["en","zh-Hans"],"aliases":["ru-RU"]},
+    {"code":"ja","url_prefix":"ja","native_name":"日本語","direction":"ltr","enabled":true,"public_enabled":true,"fallback_locales":["en","zh-Hans"],"aliases":["ja-JP"]},
+    {"code":"ko","url_prefix":"ko","native_name":"한국어","direction":"ltr","enabled":true,"public_enabled":true,"fallback_locales":["en","zh-Hans"],"aliases":["ko-KR"]},
+    {"code":"vi","url_prefix":"vi","native_name":"Tiếng Việt","direction":"ltr","enabled":false,"public_enabled":false,"fallback_locales":["en","zh-Hans"],"aliases":["vi-VN"]}
+  ]
+}

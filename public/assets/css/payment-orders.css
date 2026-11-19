@@ -1,0 +1,19 @@
+#payment-orders p { overflow-wrap: anywhere; }
+#payment-orders article button { margin-block: 4px; margin-inline: 0 8px; min-height: 44px; }
+#close-confirmation { width: min(520px, calc(100vw - 32px)); border: 1px solid var(--df-line); border-radius: 12px; padding: 24px; }
+#close-confirmation::backdrop { background: rgb(12 26 38 / 45%); }
+#close-confirmation button { min-height: 44px; margin: 4px; }
+#refund-dialog { width: min(680px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow: auto; overflow-wrap: anywhere; border: 1px solid var(--df-line); border-radius: 12px; padding: 24px; }
+#refund-dialog::backdrop { background: rgb(12 26 38 / 45%); }
+#refund-dialog button { min-height: 44px; margin: 4px; }
+#refund-control-panel { margin-block: 20px; padding: 16px; border: 1px solid var(--df-line); border-radius: 8px; }
+#refund-dialog textarea { display: block; width: 100%; max-width: 100%; font: inherit; padding: 10px; border: 1px solid var(--df-line); border-radius: 6px; }
+#refund-dialog select { min-width: 0; }
+#refund-history { padding-inline-start: 20px; }
+#refund-history li { margin: 12px 0; }
+#review-dialog { width: min(680px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow: auto; overflow-wrap: anywhere; border: 1px solid var(--df-line); border-radius: 12px; padding: 24px; }
+#review-dialog::backdrop { background: rgb(12 26 38 / 45%); }
+#review-dialog button { min-height: 44px; margin: 4px; }
+#review-dialog textarea { display: block; width: 100%; max-width: 100%; font: inherit; padding: 10px; }
+#review-dialog select { min-width: 0; max-width: 100%; }
+#review-dialog li { margin: 12px 0; }

@@ -1,0 +1,3 @@
+# Install under the same restricted PHP runtime account used by scheduled operations.
+# Refresh the GitHub release cache every 15 minutes and log failures for monitoring.
+*/15 * * * * /usr/bin/php /www/wwwroot/desktop2stereo-portal/current/bin/refresh-release.php >> /www/wwwlogs/desktop2stereo-release.log 2>&1

@@ -1,0 +1,833 @@
+/* ==========================================================================
+   东方商城系统 · 后台样式
+   /assets/css/admin.css
+   在 LayUI 2.8 之上做的一层克制的覆盖：扁平、留白、少描边、无渐变无阴影堆叠。
+   ========================================================================== */
+
+:root{
+  --df-dark:#0C1A26;
+  --df-dark-2:#132732;
+  --df-dark-3:#1B3543;
+  --df-accent:#1E6F8C;
+  --df-accent-2:#2A87A8;
+  --df-accent-soft:#E9F2F5;
+  --df-bg:#F2F5F7;
+  --df-card:#FFFFFF;
+  --df-text:#1B2733;
+  --df-text-2:#41525F;
+  --df-muted:#64778A;
+  --df-line:#E5EAEE;
+  --df-line-2:#EEF2F5;
+  --df-ok:#2E7D5B;
+  --df-warn:#B8862B;
+  --df-danger:#B33A2B;
+  --df-head-h:56px;
+  --df-side-w:232px;
+  --df-side-fold:58px;
+  --df-radius:3px;
+}
+
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;background:var(--df-bg);color:var(--df-text);
+  font:14px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--df-accent);text-decoration:none;transition:color .15s;}
+a:hover{color:var(--df-accent-2);}
+::selection{background:var(--df-accent);color:#fff;}
+
+/* 滚动条 ---------------------------------------------------------------- */
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:#C9D3DA;border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:#AEBCC6;}
+::-webkit-scrollbar-track{background:transparent;}
+
+/* ==========================================================================
+   顶栏
+   ========================================================================== */
+.df-header{
+  position:fixed;top:0;inset-inline-start:0;inset-inline-end:0;height:var(--df-head-h);z-index:1000;
+  background:var(--df-dark);display:flex;align-items:center;
+  padding-block:0;padding-inline:0 18px;
+}
+.df-logo{
+  width:var(--df-side-w);height:var(--df-head-h);flex:0 0 auto;
+  display:flex;align-items:center;gap:9px;padding-inline-start:20px;
+  color:#fff;font-size:15px;font-weight:600;letter-spacing:.3px;
+  transition:width .22s cubic-bezier(.4,0,.2,1);overflow:hidden;white-space:nowrap;
+}
+.df-logo i{font-size:19px;color:var(--df-accent-2);flex:0 0 auto;}
+.df-logo span{transition:opacity .18s;}
+
+.df-head-left{display:flex;align-items:center;gap:2px;}
+.df-head-right{margin-inline-start:auto;display:flex;align-items:center;gap:2px;}
+
+.df-hbtn{
+  height:36px;min-width:36px;padding:0 11px;border:0;background:transparent;
+  color:#8FA3B2;border-radius:var(--df-radius);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  font-size:13px;transition:background .15s,color .15s;
+}
+.df-hbtn:hover{background:rgba(255,255,255,.07);color:#fff;}
+.df-hbtn i{font-size:16px;}
+
+.df-admin-chip{
+  display:flex;align-items:center;gap:8px;padding-block:0;padding-inline:6px 10px;height:36px;
+  border-radius:var(--df-radius);color:#C7D3DC;font-size:13px;cursor:pointer;
+  transition:background .15s;
+}
+.df-admin-chip:hover{background:rgba(255,255,255,.07);}
+.df-avatar{
+  width:26px;height:26px;border-radius:50%;background:var(--df-accent);
+  color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:600;flex:0 0 auto;
+}
+
+/* ==========================================================================
+   侧边菜单
+   ========================================================================== */
+.df-side{
+  position:fixed;top:var(--df-head-h);bottom:0;inset-inline-start:0;width:var(--df-side-w);z-index:999;
+  background:var(--df-dark);overflow-y:auto;overflow-x:hidden;
+  padding:10px 0 60px;
+  transition:width .22s cubic-bezier(.4,0,.2,1),transform .22s cubic-bezier(.4,0,.2,1);
+}
+.df-side::-webkit-scrollbar{width:5px;}
+.df-side::-webkit-scrollbar-thumb{background:#26404F;}
+
+.df-menu-group{margin-bottom:1px;}
+.df-menu-item{
+  display:flex;align-items:center;gap:10px;height:42px;padding:0 18px;
+  color:#A9BBC7;font-size:14px;cursor:pointer;position:relative;white-space:nowrap;
+  transition:background .15s,color .15s;
+}
+.df-menu-item:hover{background:var(--df-dark-2);color:#fff;}
+.df-menu-item > i:first-child{font-size:16px;width:18px;text-align:center;flex:0 0 auto;}
+.df-menu-item .df-mtext{flex:1;overflow:hidden;text-overflow:ellipsis;}
+.df-menu-item .df-arrow{
+  font-size:12px;color:#5D7385;transition:transform .22s;flex:0 0 auto;
+}
+.df-menu-group.open > .df-menu-item .df-arrow{transform:rotate(90deg);}
+.df-menu-group.open > .df-menu-item{color:#fff;}
+
+.df-sub{
+  overflow:hidden;max-height:0;transition:max-height .26s cubic-bezier(.4,0,.2,1);
+  background:#0A1620;
+}
+.df-menu-group.open > .df-sub{max-height:900px;}
+
+.df-sub a{
+  display:flex;align-items:center;height:38px;padding-block:0;padding-inline:47px 18px;
+  color:#8CA0AE;font-size:13.5px;position:relative;white-space:nowrap;
+  transition:background .15s,color .15s,padding .15s;
+}
+.df-sub a::before{
+  content:"";position:absolute;inset-inline-start:29px;top:50%;width:4px;height:4px;margin-top:-2px;
+  border-radius:50%;background:#3C5566;transition:background .15s;
+}
+.df-sub a:hover{background:var(--df-dark-2);color:#fff;}
+.df-sub a:hover::before{background:var(--df-accent-2);}
+.df-sub a.active{background:var(--df-dark-3);color:#fff;}
+.df-sub a.active::before{background:var(--df-accent-2);}
+.df-sub a.active::after{
+  content:"";position:absolute;inset-inline-start:0;top:0;bottom:0;width:2px;background:var(--df-accent-2);
+}
+
+.df-menu-item.single.active{background:var(--df-dark-3);color:#fff;}
+.df-menu-item.single.active::after{
+  content:"";position:absolute;inset-inline-start:0;top:0;bottom:0;width:2px;background:var(--df-accent-2);
+}
+
+.df-side-tip{
+  padding:14px 18px 6px;color:#4E657600;font-size:11px;
+}
+
+/* 收起态 ---------------------------------------------------------------- */
+body.df-fold .df-logo{width:var(--df-side-fold);padding-inline-start:0;justify-content:center;}
+body.df-fold .df-logo span{opacity:0;width:0;overflow:hidden;}
+body.df-fold .df-side{width:var(--df-side-fold);}
+body.df-fold .df-side .df-mtext,
+body.df-fold .df-side .df-arrow{opacity:0;width:0;overflow:hidden;}
+body.df-fold .df-menu-item{justify-content:center;padding:0;}
+body.df-fold .df-sub{display:none;}
+body.df-fold .df-main{margin-inline-start:var(--df-side-fold);}
+
+/* ==========================================================================
+   主体
+   ========================================================================== */
+.df-main{
+  margin-inline-start:var(--df-side-w);padding-top:var(--df-head-h);min-height:100vh;
+  transition:margin-inline-start .22s cubic-bezier(.4,0,.2,1);
+}
+.df-body{padding:18px 20px 30px;}
+
+.df-crumb{
+  display:flex;align-items:center;gap:8px;color:var(--df-muted);font-size:13px;
+  margin-bottom:14px;
+}
+.df-crumb b{color:var(--df-text);font-weight:600;font-size:15px;}
+.df-crumb i{font-size:12px;color:#AEBCC6;}
+
+.df-card{
+  background:var(--df-card);border:1px solid var(--df-line);border-radius:var(--df-radius);
+  margin-bottom:16px;
+}
+.df-card-hd{
+  height:48px;padding:0 16px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--df-line-2);
+}
+.df-card-hd h3{margin:0;font-size:14.5px;font-weight:600;color:var(--df-text);}
+.df-card-hd .df-hd-sub{color:var(--df-muted);font-size:12.5px;}
+.df-card-hd .df-hd-right{margin-inline-start:auto;display:flex;gap:8px;align-items:center;}
+.df-card-bd{padding:16px;}
+.df-card-bd.nopad{padding:0;}
+
+/* 统计卡片 -------------------------------------------------------------- */
+.df-stats{
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin-bottom:16px;
+}
+.df-stat{
+  background:var(--df-card);border:1px solid var(--df-line);border-radius:var(--df-radius);
+  padding:16px 16px 14px;position:relative;overflow:hidden;
+  transition:border-color .18s,transform .18s;
+}
+.df-stat:hover{border-color:#CBD8E0;transform:translateY(-1px);}
+.df-stat .df-stat-t{color:var(--df-muted);font-size:12.5px;display:flex;align-items:center;gap:6px;}
+.df-stat .df-stat-t i{font-size:14px;}
+.df-stat .df-stat-v{
+  font-size:25px;font-weight:600;letter-spacing:-.5px;margin-top:8px;color:var(--df-text);
+  font-variant-numeric:tabular-nums;
+}
+.df-stat .df-stat-v small{font-size:13px;font-weight:400;color:var(--df-muted);margin-inline-start:2px;}
+.df-stat .df-stat-f{margin-top:6px;font-size:12px;color:var(--df-muted);}
+.df-stat.is-accent .df-stat-v{color:var(--df-accent);}
+.df-stat.is-warn .df-stat-v{color:var(--df-warn);}
+.df-stat.is-danger .df-stat-v{color:var(--df-danger);}
+.df-stat.is-ok .df-stat-v{color:var(--df-ok);}
+.df-stat-skeleton{
+  height:25px;width:60%;margin-top:8px;border-radius:3px;
+  background:linear-gradient(90deg,#EEF2F5 25%,#E3EAEF 37%,#EEF2F5 63%);
+  background-size:400% 100%;animation:df-shimmer 1.3s ease infinite;
+}
+@keyframes df-shimmer{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
+
+/* 筛选条 ---------------------------------------------------------------- */
+.df-filter{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:14px 16px;border-bottom:1px solid var(--df-line-2);
+}
+.df-filter .layui-input,.df-filter .layui-select{height:34px;}
+.df-filter .df-f-item{display:flex;align-items:center;gap:7px;}
+.df-filter .df-f-item > label{color:var(--df-muted);font-size:13px;white-space:nowrap;}
+.df-filter .df-f-item .layui-input{width:158px;}
+.df-filter .df-f-tail{margin-inline-start:auto;display:flex;gap:8px;}
+
+/* ==========================================================================
+   LayUI 覆盖
+   ========================================================================== */
+.layui-btn{
+  height:34px;line-height:32px;padding:0 15px;border-radius:var(--df-radius);
+  font-size:13.5px;font-weight:400;border:1px solid transparent;transition:all .16s;
+}
+.layui-btn:not(.layui-btn-primary){background-color:var(--df-accent);}
+.layui-btn:not(.layui-btn-primary):hover{background-color:var(--df-accent-2);opacity:1;}
+.layui-btn-primary{border-color:#D6DEE4;background:#fff;color:var(--df-text-2);}
+.layui-btn-primary:hover{border-color:var(--df-accent);color:var(--df-accent);background:#fff;}
+.layui-btn-danger{background-color:var(--df-danger)!important;}
+.layui-btn-danger:hover{background-color:#C4432F!important;}
+.layui-btn-warm{background-color:var(--df-warn)!important;}
+.layui-btn-normal{background-color:var(--df-accent)!important;}
+.layui-btn-sm{height:30px;line-height:28px;padding:0 11px;font-size:12.5px;}
+.layui-btn-xs{height:24px;line-height:22px;padding:0 8px;font-size:12px;}
+.layui-btn.layui-btn-disabled,.layui-btn[disabled]{opacity:.55;cursor:not-allowed;}
+
+.layui-input,.layui-textarea,.layui-select{
+  border-color:#D8E0E6;border-radius:var(--df-radius);color:var(--df-text);
+  transition:border-color .16s,box-shadow .16s;
+}
+.layui-input:focus,.layui-textarea:focus,.layui-select:focus{
+  border-color:var(--df-accent)!important;box-shadow:0 0 0 2px rgba(30,111,140,.10)!important;
+}
+.layui-input::placeholder,.layui-textarea::placeholder{color:#A7B5C0;}
+.layui-form-label{
+  width:104px;padding-block:9px;padding-inline:0 12px;text-align:end;color:var(--df-text-2);font-weight:400;
+}
+.layui-input-block{margin-inline-start:104px;}
+.layui-form-item{margin-bottom:16px;}
+.layui-form-mid{color:var(--df-muted);font-size:12.5px;}
+.df-tip{color:var(--df-muted);font-size:12.5px;line-height:1.6;margin-top:6px;}
+
+.layui-form-switch{margin-top:5px;border-color:#D8E0E6;}
+.layui-form-onswitch{border-color:var(--df-accent);background-color:var(--df-accent);}
+.layui-form-checked[lay-skin=primary] i{border-color:var(--df-accent)!important;background-color:var(--df-accent);}
+
+/* 表格 ------------------------------------------------------------------ */
+.layui-table-view{border:0;margin:0;}
+.layui-table-header{background:#F7F9FB;}
+.layui-table th{
+  background:#F7F9FB!important;color:var(--df-text-2);font-weight:600;font-size:13px;
+  border-color:var(--df-line-2)!important;
+}
+.layui-table td{border-color:var(--df-line-2)!important;font-size:13.5px;color:var(--df-text-2);}
+.layui-table-cell{height:auto;line-height:30px;padding:0 14px;}
+.layui-table-box .layui-table tbody tr:hover{background:#F6FAFB;}
+.layui-table-view .layui-table[lay-even] tr:nth-child(even){background:#FCFDFE;}
+.layui-table-page{border-top:1px solid var(--df-line-2);padding:12px 14px 6px;height:auto;}
+.layui-laypage a,.layui-laypage span{height:30px;line-height:30px;border-radius:var(--df-radius);border-color:#DDE4EA;}
+.layui-laypage .layui-laypage-curr .layui-laypage-em{background-color:var(--df-accent);border-radius:var(--df-radius);}
+.layui-table-tool{border:0;background:#fff;padding:10px 14px;min-height:auto;}
+.layui-none{color:var(--df-muted);padding:44px 0;font-size:13.5px;}
+.layui-table-grid-down{border-color:var(--df-line-2);}
+
+/* 表内小元素 ------------------------------------------------------------ */
+.df-dot{display:inline-flex;align-items:center;gap:6px;}
+.df-dot::before{content:"";width:6px;height:6px;border-radius:50%;background:#C3CED6;}
+.df-dot.on::before{background:var(--df-ok);}
+.df-dot.off::before{background:#C3CED6;}
+.df-dot.warn::before{background:var(--df-warn);}
+.df-dot.danger::before{background:var(--df-danger);}
+
+.df-tag{
+  display:inline-block;padding:1px 8px;border-radius:2px;font-size:12px;line-height:19px;
+  background:#EEF2F5;color:var(--df-text-2);
+}
+.df-tag.ok{background:#E7F3EE;color:var(--df-ok);}
+.df-tag.warn{background:#FAF2E2;color:var(--df-warn);}
+.df-tag.danger{background:#FBEAE7;color:var(--df-danger);}
+.df-tag.info{background:var(--df-accent-soft);color:var(--df-accent);}
+
+.df-thumb{width:34px;height:34px;border-radius:2px;object-fit:cover;background:#EEF2F5;vertical-align:middle;}
+.df-num{font-variant-numeric:tabular-nums;}
+.df-money{font-variant-numeric:tabular-nums;color:var(--df-danger);}
+.df-mono{font-family:Consolas,Menlo,monospace;font-size:12.5px;}
+
+.df-ops a{margin-inline-end:12px;font-size:13px;}
+.df-ops a:last-child{margin-inline-end:0;}
+.df-ops a.del{color:var(--df-danger);}
+.df-ops a.del:hover{color:#C4432F;}
+
+/* 选项卡 ---------------------------------------------------------------- */
+.layui-tab-title{border-bottom:1px solid var(--df-line);height:44px;}
+.layui-tab-title li{
+  height:44px;line-height:44px;font-size:13.5px;color:var(--df-text-2);min-width:auto;padding:0 17px;
+  transition:color .15s;
+}
+.layui-tab-title li:hover{color:var(--df-accent);}
+.layui-tab-title .layui-this{color:var(--df-accent);font-weight:600;}
+.layui-tab-title .layui-this:after{border:0;border-bottom:2px solid var(--df-accent);height:44px;border-radius:0;}
+.layui-tab-content{padding:20px 4px 4px;}
+.df-tab-vertical{display:flex;gap:0;}
+.df-tab-vertical .df-tab-nav{
+  width:168px;flex:0 0 168px;border-inline-end:1px solid var(--df-line);padding:8px 0;
+}
+.df-tab-vertical .df-tab-nav a{
+  display:block;padding:0 16px;height:38px;line-height:38px;font-size:13.5px;
+  color:var(--df-text-2);border-inline-start:2px solid transparent;transition:all .15s;
+}
+.df-tab-vertical .df-tab-nav a:hover{background:#F7F9FB;color:var(--df-accent);}
+.df-tab-vertical .df-tab-nav a.active{
+  color:var(--df-accent);border-inline-start-color:var(--df-accent);background:var(--df-accent-soft);font-weight:600;
+}
+.df-tab-vertical .df-tab-panes{flex:1;min-width:0;padding:20px 22px;}
+.df-pane{display:none;animation:df-fade .22s ease;}
+.df-pane.active{display:block;}
+@keyframes df-fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+.df-sub-title{
+  font-size:13px;color:var(--df-muted);font-weight:600;letter-spacing:.4px;
+  padding:4px 0 12px;margin:14px 0 12px;border-bottom:1px dashed var(--df-line);
+}
+.df-sub-title:first-child{margin-top:0;}
+
+/* 弹层 ------------------------------------------------------------------ */
+.layui-layer{border-radius:4px;box-shadow:0 6px 32px rgba(12,26,38,.14);}
+.layui-layer-title{
+  height:50px;line-height:50px;background:#fff;border-bottom:1px solid var(--df-line-2);
+  color:var(--df-text);font-size:14.5px;font-weight:600;padding:0 20px;border-radius:4px 4px 0 0;
+}
+.layui-layer-setwin{top:17px;inset-inline-end:18px;}
+.layui-layer-btn{
+  padding:12px 18px;border-top:1px solid var(--df-line-2);text-align:end;background:#FCFDFE;
+}
+.layui-layer-btn a{
+  height:32px;line-height:30px;border-radius:var(--df-radius);font-size:13.5px;padding:0 16px;
+  margin-inline-start:8px;border:1px solid #D6DEE4;background:#fff;color:var(--df-text-2);
+}
+.layui-layer-btn .layui-layer-btn0{
+  background:var(--df-accent);border-color:var(--df-accent);color:#fff;
+}
+.layui-layer-btn .layui-layer-btn0:hover{background:var(--df-accent-2);border-color:var(--df-accent-2);}
+.layui-layer-dialog .layui-layer-content{padding:24px 20px 22px 20px;font-size:14px;line-height:1.7;color:var(--df-text-2);}
+
+/*
+ * 带图标的提示框（layer.msg 的 icon:1 成功 / icon:2 失败 那种）。
+ *
+ * layui 用 .layui-layer-padding 给内容留 55px 左边距放图标，
+ * 但上面那条规则的 padding 把它覆盖掉了，图标就直接压在文字上。
+ * 这里把左边距补回来，并让图标垂直居中。
+ */
+.layui-layer-dialog .layui-layer-content.layui-layer-padding{
+    padding-block:22px;padding-inline:62px 26px;
+    min-height:34px;
+}
+
+/*
+ * 图标元素。
+ * 这个 layui 版本用的是 .layui-layer-face（字体图标 layui-icon-success 之类），
+ * 老版本用 .layui-layer-ico（雪碧图），两个都覆盖上，换版本也不会跑掉。
+ *
+ * 关键是 line-height 要等于 height：字体图标默认继承外层的 line-height:1.7，
+ * 撑出来的行高比图标本身高，视觉上就是"图标往下掉了一点"。
+ */
+.layui-layer-dialog .layui-layer-content .layui-layer-face,
+.layui-layer-dialog .layui-layer-content .layui-layer-ico{
+    position:absolute;
+    inset-inline-start:20px;
+    top:50%;
+    width:30px;
+    height:30px;
+    margin-top:-15px;
+    line-height:30px;
+    font-size:30px;
+    text-align:center;
+    display:block;
+}
+.layui-layer-page .layui-layer-content{padding:0;overflow:visible;}
+.layui-layer-msg{border-radius:4px;}
+.df-layer-form .layui-form-item:last-child{margin-bottom:0;}
+
+/* 库存告急右下角弹窗 ---------------------------------------------------- */
+.df-stock-pop{
+  position:fixed;inset-inline-end:20px;bottom:20px;width:300px;z-index:1200;
+  background:#fff;border:1px solid var(--df-line);border-radius:4px;
+  box-shadow:0 6px 26px rgba(12,26,38,.13);overflow:hidden;
+  transform:translateY(16px);opacity:0;pointer-events:none;
+  transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .28s;
+}
+.df-stock-pop.show{transform:none;opacity:1;pointer-events:auto;}
+.df-stock-pop .hd{
+  height:42px;padding:0 12px;display:flex;align-items:center;gap:7px;
+  border-bottom:1px solid var(--df-line-2);font-size:13.5px;font-weight:600;color:var(--df-danger);
+}
+.df-stock-pop .hd i{font-size:15px;}
+.df-stock-pop .hd .close{margin-inline-start:auto;color:#A7B5C0;cursor:pointer;font-size:14px;}
+.df-stock-pop .hd .close:hover{color:var(--df-text);}
+.df-stock-pop .bd{max-height:210px;overflow-y:auto;padding:4px 0;}
+.df-stock-pop .row{
+  display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:13px;
+}
+.df-stock-pop .row:hover{background:#F7F9FB;}
+.df-stock-pop .row .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--df-text-2);}
+.df-stock-pop .row .s{color:var(--df-danger);font-variant-numeric:tabular-nums;}
+.df-stock-pop .ft{padding:9px 12px;border-top:1px solid var(--df-line-2);text-align:end;}
+
+/* 登录页 ---------------------------------------------------------------- */
+.df-login-wrap{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:var(--df-dark);position:relative;overflow:hidden;padding:20px;
+}
+.df-login-wrap::before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(900px 500px at 72% 18%,rgba(30,111,140,.30),transparent 62%);
+}
+.df-login-box{
+  position:relative;width:376px;max-width:100%;background:#fff;border-radius:5px;
+  padding:34px 34px 28px;box-shadow:0 18px 60px rgba(0,0,0,.28);
+  animation:df-rise .4s cubic-bezier(.2,.7,.3,1);
+}
+@keyframes df-rise{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+.df-login-box h1{
+  margin:0 0 4px;font-size:19px;font-weight:600;display:flex;align-items:center;gap:8px;
+}
+.df-login-box h1 i{color:var(--df-accent);font-size:21px;}
+.df-login-box .sub{color:var(--df-muted);font-size:13px;margin-bottom:24px;}
+.df-login-box .layui-form-item{margin-bottom:15px;}
+.df-login-box .layui-input{height:42px;line-height:42px;padding-inline-start:38px;}
+.df-login-field{position:relative;}
+.df-login-field > i{
+  position:absolute;inset-inline-start:13px;top:50%;transform:translateY(-50%);
+  color:#A7B5C0;font-size:15px;z-index:1;
+}
+.df-login-cap{display:flex;gap:10px;}
+.df-login-cap .layui-input{flex:1;}
+.df-login-cap img{
+  width:112px;height:42px;border:1px solid #D8E0E6;border-radius:var(--df-radius);
+  cursor:pointer;background:#F7F9FB;flex:0 0 auto;
+}
+.df-login-btn{width:100%;height:42px;line-height:40px;font-size:14.5px;margin-top:6px;}
+.df-login-foot{margin-top:20px;text-align:center;color:#9AAAB6;font-size:12px;}
+.df-login-err{
+  background:#FBEAE7;color:var(--df-danger);border-radius:var(--df-radius);
+  padding:9px 12px;font-size:13px;margin-bottom:14px;display:none;
+}
+
+/* 上传 ------------------------------------------------------------------ */
+.df-upload{display:flex;align-items:center;gap:12px;}
+.df-upload .pv{
+  width:74px;height:74px;border:1px dashed #D2DBE2;border-radius:var(--df-radius);
+  display:flex;align-items:center;justify-content:center;background:#FAFCFD;
+  overflow:hidden;cursor:pointer;transition:border-color .16s;flex:0 0 auto;
+}
+.df-upload .pv:hover{border-color:var(--df-accent);}
+.df-upload .pv img{width:100%;height:100%;object-fit:cover;}
+.df-upload .pv i{color:#B7C4CD;font-size:20px;}
+
+/* 空态与加载 ------------------------------------------------------------ */
+.df-empty{padding:52px 0;text-align:center;color:var(--df-muted);}
+.df-empty i{font-size:36px;color:#CBD6DE;display:block;margin-bottom:10px;}
+.df-loading{padding:44px 0;text-align:center;color:var(--df-muted);font-size:13px;}
+
+/* JSON 编辑器 ----------------------------------------------------------- */
+.df-json{
+  width:100%;min-height:360px;font-family:Consolas,Menlo,monospace;font-size:13px;
+  line-height:1.75;padding:14px;border:1px solid #D8E0E6;border-radius:var(--df-radius);
+  resize:vertical;color:#26333F;background:#FCFDFE;
+}
+.df-json:focus{border-color:var(--df-accent);outline:none;box-shadow:0 0 0 2px rgba(30,111,140,.10);}
+
+/* 遮罩(移动端菜单) ------------------------------------------------------ */
+.df-mask{
+  position:fixed;inset:0;background:rgba(12,26,38,.42);z-index:998;
+  opacity:0;pointer-events:none;transition:opacity .22s;
+}
+body.df-side-open .df-mask{opacity:1;pointer-events:auto;}
+
+/* ==========================================================================
+   三端自适应
+   ========================================================================== */
+@media (max-width:1400px){
+  .df-stats{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media (max-width:1023px){      /* 平板 */
+  .df-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+  .df-body{padding:16px 16px 26px;}
+  .df-logo{width:var(--df-side-fold);padding-inline-start:0;justify-content:center;}
+  .df-logo span{display:none;}
+  .df-side{width:var(--df-side-w);transform:translateX(-100%);}
+  html[dir="rtl"] .df-side{transform:translateX(100%);}
+  body.df-side-open .df-side,
+  html[dir="rtl"] body.df-side-open .df-side{transform:none;}
+  .df-main{margin-inline-start:0;}
+  body.df-fold .df-main{margin-inline-start:0;}
+}
+@media (max-width:767px){       /* 手机 */
+  .df-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+  .df-stat{padding:13px 13px 11px;}
+  .df-stat .df-stat-v{font-size:21px;}
+  .df-body{padding:12px 12px 24px;}
+  .df-card-hd{height:auto;padding:12px;flex-wrap:wrap;}
+  .df-card-hd .df-hd-right{margin-inline-start:0;width:100%;}
+  .df-card-bd{padding:12px;}
+  .df-filter{padding:12px;}
+  .df-filter .df-f-item{width:100%;}
+  .df-filter .df-f-item .layui-input{width:100%;}
+  .df-filter .df-f-tail{margin-inline-start:0;width:100%;}
+  .df-filter .df-f-tail .layui-btn{flex:1;}
+  .df-head-right .df-hbtn span{display:none;}
+  .df-tab-vertical{display:block;}
+  .df-tab-vertical .df-tab-nav{
+    width:100%;flex:none;border-inline-end:0;border-bottom:1px solid var(--df-line);
+    display:flex;overflow-x:auto;padding:0;
+  }
+  .df-tab-vertical .df-tab-nav a{
+    border-inline-start:0;border-bottom:2px solid transparent;white-space:nowrap;padding:0 14px;
+  }
+  .df-tab-vertical .df-tab-nav a.active{border-inline-start:0;border-bottom-color:var(--df-accent);background:transparent;}
+  .df-tab-vertical .df-tab-panes{padding:16px 12px;}
+  .layui-form-label{width:auto;float:none;display:block;text-align:start;padding:0 0 6px;}
+  .layui-input-block{margin-inline-start:0;}
+  .df-stock-pop{inset-inline-start:12px;inset-inline-end:12px;width:auto;bottom:12px;}
+  /* 手机上菜单抽屉打开时先把库存弹窗让开 */
+  body.df-side-open .df-stock-pop{opacity:0;pointer-events:none;}
+}
+
+/* 打印 ------------------------------------------------------------------ */
+@media print{
+  .df-header,.df-side,.df-filter,.df-ops,.layui-table-tool{display:none!important;}
+  .df-main{margin:0;padding:0;}
+}
+
+/* =========================================================================
+ * 弹窗自适应
+ *
+ * 各页面调 layer.open 时写的都是固定像素宽度，手机上会撑出屏幕。
+ * admin.js 里已经把宽度夹到屏幕以内了，这里补两件事：
+ *   1. 内容太长时在弹窗内部滚动，不要把弹窗顶出可视区
+ *   2. 窄屏下表单标签和输入框改成上下排，横排在 375px 宽的手机上挤不下
+ * ====================================================================== */
+
+.layui-layer{
+    max-width:calc(100vw - 24px) !important;
+    border-radius:6px;
+}
+
+/*
+ * 弹窗内容超长就自己滚，别把按钮顶到屏幕外面去。
+ *
+ * 注意这里排除了 msg / dialog / loading / tips 这几类提示框：
+ * 它们的高度本来就由内容撑开，套上 max-height + overflow 之后
+ * 右侧会冒出滚动条，左边的图标（icon:1/2 那个圆圈）也会被挤错位。
+ */
+/*
+ * 滚动交给我们自己的内层容器，不要动 layui 的 .layui-layer-content。
+ *
+ * 动它的话会跟 layui 自己算的 inline height 打架，出现双滚动条；
+ * 而且用 JS 算高度在手机上会被输入法坑（键盘一弹 innerHeight 骤降）。
+ * CSS 的 vh 是按初始视口算的，键盘弹出不影响，所以限高放在这里最稳。
+ */
+.df-layer-form,
+.df-layer-scroll{
+    max-height:68vh;
+    overflow-y:auto;
+    overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;   /* iOS 上滚动跟手 */
+}
+.df-layer-scroll{padding:18px 20px;}
+
+/* 提示框保持 layui 原样：不限高、不滚动，图标才不会跑位 */
+.layui-layer-dialog .layui-layer-content,
+.layui-layer-msg .layui-layer-content,
+.layui-layer-loading .layui-layer-content,
+.layui-layer-tips .layui-layer-content{
+    max-height:none !important;
+    overflow:visible !important;
+}
+
+/* 弹窗里的表单留点内边距，贴边很难点 */
+.df-layer-form{padding:18px 20px 4px;}
+
+/* 弹窗里的长内容（卡密、JSON、报文）不要横向撑破 */
+.layui-layer-content pre,
+.layui-layer-content .df-mono,
+.layui-layer-content textarea{
+    max-width:100%;
+    white-space:pre-wrap;
+    word-break:break-all;
+}
+.layui-layer-content table{width:100% !important;}
+
+/* iframe 型弹窗（商品编辑那种） */
+.layui-layer-iframe{max-height:92vh !important;}
+.layui-layer-iframe iframe{max-height:92vh;}
+
+/* ---------- 平板 ---------- */
+@media (max-width:1023px){
+    .df-layer-form,
+    .df-layer-scroll{max-height:64vh;}
+}
+
+/* ---------- 手机 ---------- */
+@media (max-width:767px){
+    .layui-layer{
+        max-width:calc(100vw - 16px) !important;
+        border-radius:8px;
+    }
+    .df-layer-form,
+    .df-layer-scroll{max-height:60vh;}
+
+    .df-layer-form{padding:14px 14px 2px;}
+
+    /* 标签和输入框改成上下排。横排在窄屏上标签占掉一半宽度，输入框就没法用了 */
+    .df-layer-form .layui-form-item{margin-bottom:14px;}
+    .df-layer-form .layui-form-label{
+        position:static;
+        float:none;
+        display:block;
+        width:auto !important;
+        padding:0 0 6px;
+        text-align:start;
+        font-size:13.5px;
+        color:#41525F;
+        line-height:1.6;
+    }
+    .df-layer-form .layui-input-block,
+    .df-layer-form .layui-input-inline{
+        margin-inline-start:0 !important;
+        width:100% !important;
+        display:block;
+        float:none;
+    }
+    .df-layer-form .layui-input-inline + .layui-input-inline{margin-top:8px;}
+    .df-layer-form .layui-form-mid{
+        display:block;
+        float:none;
+        padding:6px 0 0;
+        line-height:1.6;
+        font-size:12.5px;
+        color:#64778A;
+    }
+    /* 弹窗里那些写死宽度的输入框（style="max-width:200px" 之类）也放开 */
+    .df-layer-form .layui-input,
+    .df-layer-form .layui-textarea,
+    .df-layer-form .layui-select,
+    .df-layer-form select{max-width:100% !important;}
+
+    /* 底部按钮加大，手指点得中 */
+    .layui-layer-btn{padding:10px 14px 14px;text-align:end;}
+    .layui-layer-btn a{
+        height:36px;
+        line-height:36px;
+        padding:0 18px;
+        font-size:14px;
+        margin-inline-start:8px;
+    }
+
+    /* 弹窗里的表格横向可滚，不要撑破弹窗 */
+    .layui-layer-content .layui-table-view,
+    .layui-layer-content .layui-table-box{overflow-x:auto;}
+
+    /* 权限勾选树、规格编辑这类多列布局，窄屏下改单列 */
+    .layui-layer-content .sku-row{flex-wrap:wrap;}
+    .layui-layer-content .sku-row .col,
+    .layui-layer-content .sku-row .col.sm,
+    .layui-layer-content .sku-row .col.xs{flex:1 1 46%;min-width:0;}
+}
+
+/* ---------- 很窄的屏（iPhone SE 之类） ---------- */
+@media (max-width:400px){
+    .layui-layer{max-width:calc(100vw - 10px) !important;}
+    .df-layer-form,
+    .df-layer-scroll{max-height:56vh;}
+    .layui-layer-title{font-size:14.5px;padding-block:0;padding-inline:14px 50px;}
+    .df-layer-form{padding:12px 12px 2px;}
+}
+
+/* 库存告急浮窗：小屏上别占满宽度、别挡住表格右侧的操作列 */
+@media (max-width:767px){
+    .df-stock-pop{
+        inset-inline-start:10px;
+        inset-inline-end:10px;
+        bottom:10px;
+        width:auto !important;
+        max-width:none;
+        max-height:44vh;
+        overflow-y:auto;
+    }
+}
+
+
+/* 提示框（layer.msg / alert）保持 layui 原样的自适应宽度 */
+.layui-layer-dialog,
+.layui-layer-msg,
+.layui-layer-loading,
+.layui-layer-tips{
+    max-width:calc(100vw - 32px) !important;
+    min-width:0;
+}
+.layui-layer-msg .layui-layer-content,
+.layui-layer-dialog .layui-layer-content{
+    word-break:break-word;
+}
+
+/*
+ * 手机键盘弹出时的弹窗形态。
+ * 键盘占掉大半屏幕，弹窗改成贴顶显示、内容区压缩，
+ * 这样标题和正在输入的那个框还在视野里。
+ */
+.layui-layer-page.df-kb-open{
+    top:8px !important;
+}
+.layui-layer-page.df-kb-open .df-layer-form,
+.layui-layer-page.df-kb-open .df-layer-scroll{
+    max-height:38vh;
+}
+
+/* 键盘态下让弹窗高度重新由内容决定，否则 layui 写在行内的固定高度会让它压不下来 */
+.layui-layer-page.df-kb-open{height:auto !important;}
+.layui-layer-page.df-kb-open > .layui-layer-content{height:auto !important;}
+
+/* =========================================================================
+ * 控制台的统计卡片与图表
+ * ====================================================================== */
+
+.df-stats-4{grid-template-columns:repeat(4,minmax(0,1fr));}
+
+.df-grid-2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    margin-bottom:16px;
+}
+.df-grid-2 > .df-card{margin-bottom:0;}
+
+.df-chart{min-height:250px;}
+/* 明确给高度，只写 max-height 的话 SVG 会按自身比例缩成一小块，容器两边空一大片 */
+.df-svg{width:100%;height:230px;display:block;}
+
+/* 趋势图图例 */
+.df-legend{
+    display:flex;gap:20px;justify-content:center;
+    margin-top:6px;font-size:12.5px;color:#64778A;
+}
+.df-legend i{
+    display:inline-block;width:11px;height:11px;border-radius:2px;
+    margin-inline-end:5px;vertical-align:-1px;
+}
+
+/* 环形图 */
+.df-pie-wrap{display:flex;align-items:center;gap:18px;width:100%;flex-wrap:wrap;}
+.df-pie{width:200px;height:200px;flex:0 0 200px;}
+.df-pie-legend{flex:1;min-width:170px;font-size:13px;}
+.df-pie-legend > div{
+    display:flex;align-items:center;gap:8px;
+    padding:6px 0;border-bottom:1px dashed #EEF2F5;
+}
+.df-pie-legend > div:last-child{border-bottom:0;}
+.df-pie-legend i{
+    display:inline-block;width:11px;height:11px;border-radius:2px;flex:0 0 11px;
+}
+.df-pie-legend .n{flex:1;color:#41525F;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.df-pie-legend .v{font-weight:600;color:#1B2733;}
+.df-pie-legend .c{color:#A7B5C0;font-size:12px;width:52px;text-align:end;}
+
+@media (max-width:1200px){
+    .df-stats-4{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media (max-width:1023px){
+    .df-grid-2{grid-template-columns:1fr;}
+    .df-pie-wrap{justify-content:center;}
+}
+@media (max-width:640px){
+    .df-stats-4{grid-template-columns:1fr;}
+    .df-chart{min-height:200px;}
+    .df-pie{width:170px;height:170px;flex:0 0 170px;}
+    .df-pie-legend{min-width:100%;}
+}
+
+/* =========================================================================
+ * 对接 / 克隆商品的拉取面板
+ * ====================================================================== */
+.df-src-panel{
+    background:#FAFCFD;border:1px solid #E5EAEE;border-radius:4px;
+    padding:16px 18px 18px;margin-bottom:16px;
+}
+.df-src-panel > .layui-form-label{padding-top:0;}
+
+/* 分类多选 */
+.df-pick-list{display:flex;flex-wrap:wrap;gap:8px 14px;max-height:150px;overflow-y:auto;}
+.df-pick{
+    display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    padding:5px 10px;border:1px solid #E5EAEE;border-radius:3px;background:#fff;
+    font-size:13px;
+}
+.df-pick input{accent-color:#1E6F8C;}
+.df-pick:hover{border-color:#1E6F8C;}
+
+/* 商品列表工具条 */
+.df-pick-bar{
+    display:flex;align-items:center;gap:14px;margin-bottom:8px;font-size:13px;
+}
+.df-pick-bar a{color:#1E6F8C;}
+.df-pick-count{margin-inline-start:auto;color:#64778A;}
+
+/* 商品表格：太长时内部滚动，别把整个弹窗撑高 */
+.df-pick-table{max-height:320px;overflow-y:auto;border:1px solid #E5EAEE;border-radius:3px;}
+.df-pick-table .layui-table{margin:0;}
+.df-pick-table input[type=checkbox]{width:15px;height:15px;accent-color:#1E6F8C;}
+
+@media (max-width:767px){
+    .df-src-panel{padding:12px;}
+    .df-pick-table{max-height:240px;}
+}

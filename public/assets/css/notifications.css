@@ -1,0 +1,5 @@
+#notifications { overflow-wrap: anywhere; }
+#notifications button { min-height: 44px; }
+#notifications[data-admin="true"] button { margin: 4px; }
+#notification-retry { width: min(540px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; border: 1px solid var(--df-line); border-radius: 12px; padding: 24px; overflow-wrap: anywhere; }
+#notification-retry::backdrop { background: rgb(12 26 38 / 45%); }

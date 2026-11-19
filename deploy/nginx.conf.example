@@ -1,0 +1,31 @@
+# Replace every example hostname and release path before deployment.
+server {
+    listen 80;
+    server_name portal.example.invalid;
+    return 308 https://portal.example.invalid$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name portal.example.invalid;
+    root /srv/desktop2stereo-portal/current/public;
+    index index.php;
+    # Apply HSTS only after both production domains and their certificates are verified.
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    # One multipart ticket attachment is capped at 5 MiB by the application.
+    client_max_body_size 7m;
+
+    # Supply certificate paths in the deployment's restricted configuration.
+    location / { try_files $uri /index.php$is_args$args; }
+    location ~ /\. { deny all; }
+    location = /router.php { deny all; }
+    location = /index.php {
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root/index.php;
+        fastcgi_param HTTP_AUTHORIZATION $http_authorization;
+        fastcgi_param HTTPS on;
+        fastcgi_param REQUEST_SCHEME https;
+        fastcgi_pass unix:/run/php/php8.4-fpm.sock;
+    }
+    location ~ \.php$ { return 404; }
+}
