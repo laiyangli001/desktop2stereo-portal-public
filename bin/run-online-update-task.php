@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 require dirname(__DIR__).'/includes/bootstrap/app.php';
 
+use D2S\services\GitHubUpdateSource;
+use D2S\services\OnlineUpdate;
 use D2S\services\OnlineUpdateTasks;
 use D2S\services\ReleaseManifest;
 
@@ -19,6 +21,13 @@ try{
     if(($task['status']??null)!=='queued')throw new RuntimeException('update_install_task_state_invalid');
     $release=(string)($task['release']??'');
     if(!preg_match('/^[a-f0-9]{40}$/D',$release))throw new RuntimeException('update_install_task_invalid');
+    $operation=$task['operation']??'install';
+    if($operation==='download'){
+        runGitHubDownload($taskId,$release,(string)($task['repository']??''),$tasks);
+        echo "update_download_complete\n";
+        return;
+    }
+    if($operation!=='install')throw new RuntimeException('update_install_task_invalid');
 
     $tasks->update($taskId,['status'=>'running','phase'=>'validating_current_release','percent'=>5]);
     $deploymentRoot=(string)(getenv('D2S_DEPLOYMENT_ROOT')?:'');
@@ -84,6 +93,29 @@ function run(array $command): array
     $stdout=stream_get_contents($pipes[1],1048576);fclose($pipes[1]);
     $stderr=stream_get_contents($pipes[2],1048576);fclose($pipes[2]);
     return ['exit'=>proc_close($process),'stdout'=>(string)$stdout,'stderr'=>(string)$stderr];
+}
+
+function runGitHubDownload(string $taskId,string $release,string $repository,OnlineUpdateTasks $tasks): void
+{
+    $source=new GitHubUpdateSource(new OnlineUpdate(D2S_ROOT),null,$repository);
+    $started=microtime(true);$lastAt=0.0;$lastBytes=0;$lastPhase='';
+    $tasks->update($taskId,['status'=>'running','phase'=>'downloading_source','percent'=>1,'download_bytes'=>0,
+        'download_total_bytes'=>null,'download_speed_bytes_per_second'=>0]);
+    $progress=static function(string $phase,int $bytes,?int $total)use($taskId,$tasks,$started,&$lastAt,&$lastBytes,&$lastPhase):void{
+        $now=microtime(true);
+        if($phase===$lastPhase&&$bytes-$lastBytes<524288&&$now-$lastAt<1.0)return;
+        $percent=$phase==='staging_source'?95:($total!==null&&$total>0?min(89,5+(int)floor(($bytes/$total)*80)):null);
+        $tasks->update($taskId,[
+            'phase'=>$phase,'percent'=>$percent,'download_bytes'=>$bytes,'download_total_bytes'=>$total,
+            'download_speed_bytes_per_second'=>(int)round($bytes/max(0.001,$now-$started)),
+        ]);
+        $lastAt=$now;$lastBytes=$bytes;$lastPhase=$phase;
+    };
+    $result=$source->downloadPinned($release,$progress);
+    $tasks->update($taskId,[
+        'status'=>'completed','phase'=>'complete','percent'=>100,'result'=>$result,
+        'download_bytes'=>$result['artifact_size'],'download_total_bytes'=>$result['artifact_size'],
+    ]);
 }
 
 function extractError(string $stderr,string $stdout): string

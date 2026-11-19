@@ -199,7 +199,7 @@ if($productImageWrite){
 }elseif($route==='/upgrade/check'&&$method==='GET'){
     $data=(new D2S\services\SystemOperations($db))->checkGitHubUpdate($adminId,$_GET['address']??null);
 }elseif($route==='/upgrade/download'&&$method==='POST'){
-    $data=(new D2S\services\SystemOperations($db))->downloadGitHubUpdate($adminId,$input,$context,$now);
+    $data=(new D2S\services\SystemOperations($db))->queueGitHubDownload($adminId,$input);
 }elseif($route==='/upgrade/stage'&&$write){
     $data=(new D2S\services\SystemOperations($db))->stageOnlineUpdate($adminId,$input,$context,$now);
 }elseif($route==='/upgrade/prepare'&&$write){
@@ -209,7 +209,7 @@ if($productImageWrite){
 }elseif($route==='/upgrade/progress'&&$method==='GET'){
     $taskId=$_GET['task_id']??'';
     if(!is_string($taskId))throw new Problem('update_install_task_invalid',400);
-    $data=(new D2S\services\SystemOperations($db))->onlineUpdateProgress($adminId,$taskId);
+    $data=(new D2S\services\SystemOperations($db))->onlineUpdateProgress($adminId,$taskId,$context,$now);
 }elseif(in_array($route,['/maintenance','/upgrade'],true)){
     if($write)throw new Problem('method_not_allowed',405);
     $system=new D2S\services\SystemOperations($db);

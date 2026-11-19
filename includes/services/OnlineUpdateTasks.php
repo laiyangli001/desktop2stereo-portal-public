@@ -49,9 +49,31 @@ final readonly class OnlineUpdateTasks
 
         $taskId=bin2hex(random_bytes(16));
         $task=[
-            'format'=>'d2s-update-task-v1','task_id'=>$taskId,'release'=>$release,
+            'format'=>'d2s-update-task-v1','task_id'=>$taskId,'release'=>$release,'operation'=>'install',
             'status'=>'queued','phase'=>'queued','percent'=>0,'created_at'=>time(),'updated_at'=>time(),
         ];
+        return $this->launch($taskId,$task);
+    }
+
+    public function startGitHubDownload(string $release,string $repository,int $adminId): array
+    {
+        if(!$this->enabled())throw new RuntimeException('update_install_unavailable');
+        if(!preg_match('/^[a-f0-9]{40}$/D',$release)||$adminId<1)throw new RuntimeException('update_github_selection_changed');
+        $source=new GitHubUpdateSource(new OnlineUpdate($this->root),null,$repository);
+        $repository=$source->repository();
+        if($this->hasActiveGitHubDownload())throw new RuntimeException('update_download_in_progress');
+
+        $taskId=bin2hex(random_bytes(16));
+        $task=[
+            'format'=>'d2s-update-task-v1','task_id'=>$taskId,'release'=>$release,'operation'=>'download',
+            'repository'=>$repository,'admin_id'=>$adminId,
+            'status'=>'queued','phase'=>'queued','percent'=>0,'created_at'=>time(),'updated_at'=>time(),
+        ];
+        return $this->launch($taskId,$task);
+    }
+
+    private function launch(string $taskId,array $task): array
+    {
         $this->write($taskId,$task);
         $command=['/usr/bin/sudo','-n','/usr/local/sbin/d2s-start-update-task',$taskId];
         $pipes=[];
@@ -72,6 +94,17 @@ final readonly class OnlineUpdateTasks
         return $this->get($taskId);
     }
 
+    private function hasActiveGitHubDownload(): bool
+    {
+        $files=glob($this->taskDirectory().DIRECTORY_SEPARATOR.'*.json')?:[];
+        foreach($files as$file){
+            if(is_link($file)||!preg_match('/^[a-f0-9]{32}\.json$/D',basename($file)))continue;
+            try{$task=$this->get(substr(basename($file),0,32));}catch(RuntimeException){continue;}
+            if(($task['operation']??null)==='download'&&in_array($task['status']??null,['queued','running'],true))return true;
+        }
+        return false;
+    }
+
     public function latest(): ?array
     {
         if(!$this->enabled())return null;
@@ -79,7 +112,9 @@ final readonly class OnlineUpdateTasks
         usort($files,static fn(string $a,string $b):int=>(filemtime($b)?:0)<=>(filemtime($a)?:0));
         foreach(array_slice($files,0,20)as$file){
             if(is_link($file)||!preg_match('/^[a-f0-9]{32}\.json$/D',basename($file)))continue;
-            try{return $this->get(substr(basename($file),0,32));}catch(RuntimeException){}
+            try{$task=$this->get(substr(basename($file),0,32));}catch(RuntimeException){continue;}
+            if(($task['operation']??'install')==='download')continue;
+            return $task;
         }
         return null;
     }

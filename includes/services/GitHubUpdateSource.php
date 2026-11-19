@@ -51,6 +51,18 @@ final class GitHubUpdateSource
         return $this->update->stageSourceArchive($body,$release,$summary['repository'],$summary['branch']);
     }
 
+    public function downloadPinned(string $release,?callable $progress=null): array
+    {
+        if(!preg_match('/^[a-f0-9]{40}$/D',$release)){
+            throw new RuntimeException('update_github_selection_changed');
+        }
+        $repository=$this->repository();
+        $archiveUrl='https://api.github.com/repos/'.$repository.'/tarball/'.rawurlencode($release);
+        $body=$this->sourceArchive($archiveUrl,$progress);
+        if($progress!==null)$progress('staging_source',strlen($body),strlen($body));
+        return $this->update->stageSourceArchive($body,$release,$repository,'main');
+    }
+
     private function candidate(?string $current): array
     {
         $repo=$this->repository();
@@ -66,10 +78,11 @@ final class GitHubUpdateSource
         return ['summary'=>$summary,'source_archive_url'=>'https://api.github.com/repos/'.$repo.'/tarball/'.rawurlencode($target)];
     }
 
-    private function sourceArchive(string $url): string
+    private function sourceArchive(string $url,?callable $progress=null): string
     {
         for($attempt=0;$attempt<3;$attempt++){
-            $response=$this->send($url,'application/vnd.github+json',134217728);
+            $response=$this->send($url,'application/vnd.github+json',134217728,$progress===null?null:
+                static fn(int $bytes,?int $total)=>$progress('downloading_source',$bytes,$total));
             if($response['status']===200){
                 if(!str_starts_with($response['body'],"\x1f\x8b")){
                     throw new RuntimeException('update_artifact_invalid');
@@ -115,7 +128,7 @@ final class GitHubUpdateSource
         throw new RuntimeException('update_download_failed');
     }
 
-    private function send(string $url,string $accept,int $maximum): array
+    private function send(string $url,string $accept,int $maximum,?callable $progress=null): array
     {
         $parts=parse_url($url);
         $host=$parts['host']??null;
@@ -135,7 +148,7 @@ final class GitHubUpdateSource
             }
         }
         $response=$this->requester===null
-            ?UpdateHttp::request($url,$host,$maximum,$headers,getenv('D2S_CA_BUNDLE')?:null,$maximum>2097152?60:10)
+            ?UpdateHttp::request($url,$host,$maximum,$headers,getenv('D2S_CA_BUNDLE')?:null,$maximum>2097152?600:10,$progress)
             :($this->requester)($url,$maximum,$headers);
         if(!is_array($response)||!is_int($response['status']??null)||!is_string($response['body']??null)
             ||strlen($response['body'])>$maximum)throw new RuntimeException('update_github_unavailable');

@@ -88,12 +88,20 @@ final readonly class SystemOperations
         catch(\RuntimeException $error){throw new \D2S\domain\Problem($error->getMessage(),400);}
     }
 
-    public function downloadGitHubUpdate(int $adminId,array $input,array $context,int $now): array
+    public function queueGitHubDownload(int $adminId,array $input): array
     {
         Permissions::require($this->db,$adminId,'settings.manage');
-        try{$result=$this->github($input['address']??null)->download($this->currentRelease(),$input);}
-        catch(\RuntimeException $error){throw new \D2S\domain\Problem($error->getMessage(),400);}
-        return $this->auditStagedUpdate($adminId,$result,$context,$now);
+        $release=$input['release']??null;
+        if(!is_string($release)||!preg_match('/^[a-f0-9]{40}$/D',$release)){
+            throw new \D2S\domain\Problem('update_github_selection_changed',400);
+        }
+        try{
+            $latest=$this->github($input['address']??null)->check($this->currentRelease());
+            if($latest['state']!=='available'||$latest['release']!==$release){
+                throw new \RuntimeException('update_github_selection_changed');
+            }
+            return (new OnlineUpdateTasks($this->root))->startGitHubDownload($release,$latest['repository'],$adminId);
+        }catch(\RuntimeException $error){throw new \D2S\domain\Problem($error->getMessage(),400);}
     }
 
     private function github(mixed $address=null): GitHubUpdateSource
@@ -165,11 +173,20 @@ final readonly class SystemOperations
         return $task;
     }
 
-    public function onlineUpdateProgress(int $adminId,string $taskId): array
+    public function onlineUpdateProgress(int $adminId,string $taskId,array $context,int $now): array
     {
         Permissions::require($this->db,$adminId,'settings.manage');
-        try{return (new OnlineUpdateTasks($this->root))->get($taskId);}
+        $tasks=new OnlineUpdateTasks($this->root);
+        try{$task=$tasks->get($taskId);}
         catch(\RuntimeException $error){throw new Problem($error->getMessage(),404);}
+        if(($task['operation']??null)==='download'){
+            if((int)($task['admin_id']??0)!==$adminId)throw new Problem('update_install_task_not_found',404);
+            if(($task['status']??null)==='completed'&&empty($task['audit_recorded'])&&is_array($task['result']??null)){
+                $this->auditStagedUpdate($adminId,$task['result'],$context,$now);
+                $task=$tasks->update($taskId,['audit_recorded'=>true]);
+            }
+        }
+        return $task;
     }
 
     /** Inspect migration files without evaluating their PHP or executing any SQL. */

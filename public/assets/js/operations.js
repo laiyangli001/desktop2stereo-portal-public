@@ -37,6 +37,7 @@
     update_artifact_invalid: tr('updates.errors.metadata'),
     update_artifact_hash_invalid: tr('updates.errors.hash'),
     update_download_failed: tr('updates.errors.download'),
+    update_download_in_progress: tr('updates.github.download_in_progress'),
     update_download_too_large: tr('updates.errors.size'),
     update_staging_unavailable: tr('updates.errors.storage'),
     update_staging_write_failed: tr('updates.errors.storage'),
@@ -1542,6 +1543,31 @@
     const feedback = node('p', '', 'portal-help');
     feedback.setAttribute('role','status');
     const releaseDetails = node('div');
+    const downloadProgress = node('p', '', 'portal-help');
+    downloadProgress.hidden = true;
+    const watchDownload = async (taskId) => {
+      downloadProgress.hidden = false;
+      for (let attempt = 0; attempt < 2700; attempt++) {
+        const state = await request('/upgrade/progress?' + new URLSearchParams({task_id:taskId}));
+        const phaseLabel = state.phase === 'staging_source'
+          ? tr('updates.github.staging')
+          : tr('updates.github.downloading');
+        const bytes = Number(state.download_bytes || 0);
+        const total = Number(state.download_total_bytes || 0);
+        const speed = Number(state.download_speed_bytes_per_second || 0);
+        const transfer = bytes > 0
+          ? ' · ' + byteSize(bytes) + (total > 0 ? ' / ' + byteSize(total) : '') + ' · ' + byteSize(speed) + '/s'
+          : '';
+        const progressLabel = state.percent == null ? '' : state.percent + '% · ';
+        downloadProgress.textContent = progressLabel + phaseLabel + transfer;
+        if (state.status === 'failed') {
+          throw new Error(messages[state.error] || tr('updates.errors.download'));
+        }
+        if (state.status === 'completed') return;
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      throw new Error(tr('updates.github.download_timeout'));
+    };
     const statusLabels = {
       available:tr('updates.github.available'),
       current:tr('updates.github.current'),
@@ -1552,7 +1578,8 @@
     let candidate = null;
     const check = button(tr('updates.github.check'), async () => {
       candidate = null;
-      download.hidden = true; check.disabled = true; address.disabled = true;
+      download.hidden = true; downloadProgress.hidden = true; downloadProgress.textContent = '';
+      check.disabled = true; address.disabled = true;
       const checkedAddress = address.value.trim();
       releaseDetails.replaceChildren();
       latestVersion.textContent = tr('updates.github.not_checked');
@@ -1582,7 +1609,8 @@
       check.disabled = true; download.disabled = true; address.disabled = true;
       feedback.textContent = tr('updates.github.downloading');
       try {
-        await request('/upgrade/download', {address:candidate.address, release:candidate.release});
+        const task = await request('/upgrade/download', {address:candidate.address, release:candidate.release});
+        await watchDownload(task.task_id);
         await load();
         message(tr('updates.stage_success'), notice);
         notice.dataset.state = 'success';
@@ -1594,13 +1622,15 @@
       updateAddress = address.value;
       candidate = null;
       download.hidden = true;
+      downloadProgress.hidden = true;
+      downloadProgress.textContent = '';
       check.disabled = !address.value.trim();
       feedback.textContent = '';
       latestVersion.textContent = tr('updates.github.not_checked');
       releaseDetails.replaceChildren();
     });
     toolbar.append(check, download);
-    github.append(sourceField, toolbar, feedback, releaseDetails);
+    github.append(sourceField, toolbar, feedback, downloadProgress, releaseDetails);
     results.append(github);
     const manifestNames = {unconfigured: tr('operations.render_upgrade.not_configured'), missing: tr('operations.render_upgrade.manifest_missing'), verified: tr('operations.render_upgrade.verified'), invalid: tr('operations.render_upgrade.invalid')};
     const advanced = node('details', null, 'system-diagnostics');
