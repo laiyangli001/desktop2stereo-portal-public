@@ -21,6 +21,7 @@ if (isset($db) && $db instanceof PDO) {
 ?>
 <?php require_once D2S_ROOT.'/template/partials/locale-runtime.php'; ?>
 <script src="/assets/js/theme.js" data-default-theme="<?= d2s_escape((string)$headerPlatform['default_theme']) ?>" data-platform-template="<?= d2s_escape((string)$headerPlatform['template']) ?>"></script>
+<script src="<?= d2s_escape(d2s_asset('/assets/js/password-visibility.js')) ?>" defer></script>
 <header class="portal-header site-header">
     <a href="<?= d2s_escape(d2s_url('/')) ?>" class="portal-brand"><?= d2s_escape($headerName) ?></a>
     <nav class="site-header-links" aria-label="<?= d2s_tr('common.nav.primary') ?>">

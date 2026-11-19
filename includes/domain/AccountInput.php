@@ -51,7 +51,7 @@ final class AccountInput
 
     public static function password(string $value, bool $admin = false): string
     {
-        if (!mb_check_encoding($value, 'UTF-8') || mb_strlen($value, 'UTF-8') < ($admin ? 14 : 10) || strlen($value) > 64 ||
+        if (!mb_check_encoding($value, 'UTF-8') || mb_strlen($value, 'UTF-8') < ($admin ? 8 : 6) || strlen($value) > 64 ||
             str_contains($value, "\0") ||
             ($admin && (!preg_match('/[a-z]/', $value) || !preg_match('/[A-Z]/', $value) ||
                 !preg_match('/[0-9]/', $value) || !preg_match('/[^a-zA-Z0-9]/', $value)))) {

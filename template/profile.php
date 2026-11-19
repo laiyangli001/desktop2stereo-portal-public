@@ -65,9 +65,9 @@ $phoneAvailable = D2S\services\DeliveryGateway::available('phone', $deliveryConf
                     <label for="current-password"><?= d2s_escape(d2s_tr('accounts.labels.current_password')) ?></label>
                     <input id="current-password" name="current_password" type="password" autocomplete="current-password" maxlength="64" required>
                     <label for="new-password"><?= d2s_escape(d2s_tr('accounts.labels.new_password')) ?></label>
-                    <input id="new-password" name="new_password" type="password" autocomplete="new-password" minlength="10" maxlength="64" required>
+                    <input id="new-password" name="new_password" type="password" autocomplete="new-password" minlength="6" maxlength="64" required>
                     <label for="confirm-password"><?= d2s_escape(d2s_tr('accounts.labels.confirm_password')) ?></label>
-                    <input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="10" maxlength="64" required>
+                    <input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="6" maxlength="64" required>
                     <p class="portal-help"><?= d2s_escape(d2s_tr('accounts.profile.password_help')) ?></p>
                     <p id="password-message" role="status" aria-live="polite"></p>
                     <button class="portal-primary" type="submit"><?= d2s_escape(d2s_tr('accounts.actions.change_password')) ?></button>

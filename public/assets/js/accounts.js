@@ -50,7 +50,6 @@ const captchaCancelButton = document.querySelector('#captcha-cancel');
 const captchaError = document.querySelector('#captcha-error');
 const captchaStatus = document.querySelector('#captcha-status');
 const captchaEnabled = form?.dataset.captchaEnabled !== 'false';
-const passwordToggleButtons = document.querySelectorAll('.portal-password-toggle');
 let captchaData = null;
 let captchaClicks = [];
 let challengeId = null;
@@ -241,17 +240,6 @@ function updateContact() {
   invalidateChallenge();
   updateSend();
 }
-
-passwordToggleButtons.forEach((button) => {
-  button.addEventListener('click', () => {
-    const input = button.parentElement.querySelector('input[type="password"], input[type="text"]');
-    const visible = input.type === 'password';
-    input.type = visible ? 'text' : 'password';
-    button.setAttribute('aria-pressed', String(visible));
-    button.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
-    button.title = accountTr(visible ? 'accounts.actions.hide_password' : 'accounts.actions.show_password');
-  });
-});
 
 if (form) {
 

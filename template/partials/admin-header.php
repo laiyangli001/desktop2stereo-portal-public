@@ -158,4 +158,5 @@ $adminMenu = array_values(array_filter($adminMenu, static function (array $item)
 </aside>
 <div id="admin-sidebar-backdrop" class="admin-sidebar-backdrop"></div>
 <script src="/assets/js/theme.js" data-default-theme="<?= d2s_escape((string)$adminPlatform['default_theme']) ?>" data-platform-template="<?= d2s_escape((string)$adminPlatform['template']) ?>"></script>
+<script src="<?= d2s_escape(d2s_asset('/assets/js/password-visibility.js')) ?>" defer></script>
 <script src="<?= d2s_escape(d2s_asset('/assets/js/admin-shell.js')) ?>" defer></script>

@@ -52,15 +52,11 @@ $nextQuery = $pageNext === '' ? '' : '?next=' . rawurlencode($pageNext);
                 <input id="identifier" name="identifier" autocomplete="username" maxlength="254" required>
             <?php endif ?>
             <label for="password"><?= d2s_escape(d2s_tr($pageMode === 'reset' ? 'accounts.labels.new_password' : 'accounts.labels.password')) ?></label>
-            <div class="portal-password-field">
-                <input id="password" name="password" type="password" autocomplete="<?= $hasVerification ? 'new-password' : 'current-password' ?>" minlength="<?= $isAdmin ? 14 : ($hasVerification ? 10 : 1) ?>" maxlength="64" required>
-                <button class="portal-password-toggle" type="button" aria-label="Show password" title="<?= d2s_escape(d2s_tr('accounts.actions.show_password')) ?>" aria-pressed="false">◉</button>
-            </div>
+            <input id="password" name="password" type="password" autocomplete="<?= $hasVerification ? 'new-password' : 'current-password' ?>" minlength="<?= $isAdmin ? 8 : ($hasVerification ? 6 : 1) ?>" maxlength="64" required>
             <?php if ($pageMode === 'register'): ?>
                 <label for="confirm-password"><?= d2s_escape(d2s_tr('accounts.labels.confirm_password')) ?></label>
                 <div class="portal-password-field">
-                    <input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="10" maxlength="64" required>
-                    <button class="portal-password-toggle" type="button" aria-label="Show password" title="<?= d2s_escape(d2s_tr('accounts.actions.show_password')) ?>" aria-pressed="false">◉</button>
+                    <input id="confirm-password" name="confirm_password" type="password" autocomplete="new-password" minlength="6" maxlength="64" required>
                 </div>
             <?php endif ?>
             <?php if ($hasVerification): ?><p class="portal-help"><?= d2s_escape(d2s_tr('accounts.help.password')) ?></p><?php else: ?>
