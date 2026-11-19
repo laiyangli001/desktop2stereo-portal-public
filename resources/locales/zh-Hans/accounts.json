@@ -97,7 +97,7 @@
   "errors.invalid_credentials": "账号或密码不正确。",
   "errors.login_temporarily_locked": "登录失败次数过多，请15分钟后重试。",
   "errors.account_restricted_or_unverified": "账户未完成验证或已受限制。",
-  "errors.password_policy": "用户密码请使用6～64个字符。",
+  "errors.password_policy": "密码请使用6～64个字符。",
   "errors.password_unchanged": "新密码不能与当前密码相同。",
   "errors.legal_consent_required": "请阅读并同意用户协议和隐私政策后再注册。",
   "errors.legal_policy_unavailable": "法律文本版本暂不可用，请稍后重试。",

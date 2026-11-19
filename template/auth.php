@@ -52,7 +52,7 @@ $nextQuery = $pageNext === '' ? '' : '?next=' . rawurlencode($pageNext);
                 <input id="identifier" name="identifier" autocomplete="username" maxlength="254" required>
             <?php endif ?>
             <label for="password"><?= d2s_escape(d2s_tr($pageMode === 'reset' ? 'accounts.labels.new_password' : 'accounts.labels.password')) ?></label>
-            <input id="password" name="password" type="password" autocomplete="<?= $hasVerification ? 'new-password' : 'current-password' ?>" minlength="<?= $isAdmin ? 8 : ($hasVerification ? 6 : 1) ?>" maxlength="64" required>
+            <input id="password" name="password" type="password" autocomplete="<?= $hasVerification ? 'new-password' : 'current-password' ?>" minlength="<?= $hasVerification ? 6 : 1 ?>" maxlength="64" required>
             <?php if ($pageMode === 'register'): ?>
                 <label for="confirm-password"><?= d2s_escape(d2s_tr('accounts.labels.confirm_password')) ?></label>
                 <div class="portal-password-field">

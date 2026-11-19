@@ -13,7 +13,7 @@
   "errors.verified_contact_required": "启用的账户至少需要保留一个有效邮箱或手机号。",
   "errors.wallet_balance_out_of_range": "调整后的余额超出允许范围。",
   "errors.export_too_many_rows": "导出超过 5000 条，请缩小筛选范围。",
-  "errors.password_policy": "用户密码至少 6 位；管理员密码至少 8 位并包含大小写、数字和符号。",
+  "errors.password_policy": "密码至少 6 位；管理员密码需包含大小写字母和数字。",
   "errors.field_required": "请填写所有必填字段。",
   "errors.session_invalid": "登录已失效，请重新登录。",
   "errors.article_body_required": "请填写正文。",

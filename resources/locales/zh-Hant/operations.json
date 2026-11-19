@@ -13,7 +13,7 @@
     "errors.verified_contact_required": "啓用的賬戶至少需要保留一個有效電子郵件或手機號碼。",
     "errors.wallet_balance_out_of_range": "調整後的餘額超出允許範圍。",
     "errors.export_too_many_rows": "導出超過 5000 條，請縮小篩選範圍。",
-    "errors.password_policy": "使用者密碼至少 10 位；管理員密碼至少 14 位並包含大小寫、數字和符號。",
+    "errors.password_policy": "密碼至少 6 位；管理員密碼需包含大小寫字母和數字。",
     "errors.field_required": "請填寫所有必填字段。",
     "errors.session_invalid": "登入已失效，請重新登入。",
     "errors.article_body_required": "請填寫正文。",

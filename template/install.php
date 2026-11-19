@@ -43,8 +43,8 @@ $installed = D2S\services\Installation::installed();
             <label><?= d2s_tr('installation.field.app_url') ?><input name="app_url" type="url" required></label>
             <label><?= d2s_tr('installation.field.admin_username') ?><input name="admin_username" pattern="(?![0-9]+$)[A-Za-z0-9_-]{3,32}" required></label>
             <label><?= d2s_tr('installation.field.admin_email') ?><input name="admin_email" type="email" required></label>
-            <label><?= d2s_tr('installation.field.admin_password') ?><input name="admin_password" type="password" minlength="8" maxlength="64" autocomplete="new-password" required></label>
-            <label><?= d2s_tr('installation.field.admin_password_confirm') ?><input name="admin_password_confirm" type="password" minlength="8" maxlength="64" autocomplete="new-password" required></label>
+            <label><?= d2s_tr('installation.field.admin_password') ?><input name="admin_password" type="password" minlength="6" maxlength="64" autocomplete="new-password" required></label>
+            <label><?= d2s_tr('installation.field.admin_password_confirm') ?><input name="admin_password_confirm" type="password" minlength="6" maxlength="64" autocomplete="new-password" required></label>
             <p class="wide portal-help"><?= d2s_tr('installation.password.help') ?></p>
             <footer><button id="install-test" type="button"><?= d2s_tr('installation.action.test_database') ?></button><button id="install-run" class="portal-primary" type="submit" disabled><?= d2s_tr('installation.action.install') ?></button></footer>
         </form>
