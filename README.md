@@ -83,4 +83,5 @@ php bin/migrate.php
 - [部署、备份和计划任务](docs/deployment.md)
 - [本地注册配置](docs/local-registration-without-email.md)
 - [多语言运行与词典管理](docs/multilingual-runtime.md)
+- [软件更新分发与后台管理实施方案](docs/software-update-admin-implementation.md) · [V2 原始方案](docs/software-update-distribution-v2.md)
 - [账户接口](docs/accounts-api.md) · [交易接口](docs/commerce-api.md) · [内容接口](docs/content-api.md) · [客户端授权接口](docs/client-api.md)
