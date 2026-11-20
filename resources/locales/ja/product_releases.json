@@ -40,5 +40,14 @@
   "remove": "チャネルを削除",
   "save_draft": "下書きを保存",
   "minimum_supported": "最低サポートバージョン",
-  "save_policy": "ポリシーを保存"
+  "save_policy": "ポリシーを保存",
+  "beta_trial": "ベータ版と試用",
+  "beta_start": "ベータ開始",
+  "beta_end": "ベータ終了",
+  "post_beta_mode": "ベータ終了後",
+  "free": "無料",
+  "paid": "有料",
+  "trial_enabled": "試用を有効化",
+  "trial_days": "試用日数",
+  "save_operations": "設定を保存"
 }

@@ -227,6 +227,72 @@ final readonly class ProductReleaseManager
         });
     }
 
+    public function productOperations(int $adminId,string $product): array
+    {
+        Permissions::require($this->db,$adminId,'products.manage');
+        $product=ProductCatalog::code($product);
+        $this->assertProduct($this->db,$product);
+        $query=$this->db->prepare('SELECT beta_starts_at,beta_ends_at,post_beta_mode,trial_enabled,trial_days,revision,updated_at
+            FROM portal_product_operations WHERE product_code=?');
+        $query->execute([$product]);
+        $row=$query->fetch()?:[
+            'beta_starts_at'=>null,'beta_ends_at'=>null,'post_beta_mode'=>'paid',
+            'trial_enabled'=>0,'trial_days'=>30,'revision'=>1,'updated_at'=>null,
+        ];
+        foreach(['beta_starts_at','beta_ends_at','updated_at'] as $key)$row[$key]=$row[$key]===null?null:(int)$row[$key];
+        $row['trial_enabled']=(bool)$row['trial_enabled'];
+        $row['trial_days']=(int)$row['trial_days'];
+        $row['revision']=(int)$row['revision'];
+        return $row;
+    }
+
+    public function saveProductOperations(int $adminId,string $product,array $input,array $context,int $now): array
+    {
+        Permissions::require($this->db,$adminId,'products.manage');
+        $product=ProductCatalog::code($product);
+        $start=$input['beta_starts_at']??null;
+        $end=$input['beta_ends_at']??null;
+        foreach([$start,$end] as $value){
+            if($value!==null&&(!is_int($value)||$value<0||$value>4102444800))throw new Problem('product_operations_invalid');
+        }
+        if($start!==null&&$end!==null&&$end<=$start)throw new Problem('product_operations_invalid');
+        $mode=$this->string($input,'post_beta_mode',16,true);
+        if(!in_array($mode,['free','paid'],true))throw new Problem('product_operations_invalid');
+        $trial=$input['trial_enabled']??null;
+        if(!is_bool($trial))throw new Problem('product_operations_invalid');
+        $days=$this->integer($input['trial_days']??null,1,3650,'product_operations_invalid');
+        $revision=$this->integer($input['revision']??null,1,PHP_INT_MAX,'record_changed');
+        return Database::transaction($this->db,function(PDO $db)use($adminId,$product,$start,$end,$mode,$trial,$days,$revision,$context,$now):array{
+            $this->assertProduct($db,$product,true);
+            $query=$db->prepare('SELECT beta_starts_at,beta_ends_at,post_beta_mode,trial_enabled,trial_days,revision
+                FROM portal_product_operations WHERE product_code=? FOR UPDATE');
+            $query->execute([$product]);$before=$query->fetch();
+            $actual=$before===false?1:(int)$before['revision'];
+            if($actual!==$revision)throw new Problem('record_changed',409);
+            $db->prepare('INSERT INTO portal_product_operations
+                (product_code,beta_starts_at,beta_ends_at,post_beta_mode,trial_enabled,trial_days,revision,updated_by,updated_at)
+                VALUES(?,?,?,?,?,?,1,?,?) ON DUPLICATE KEY UPDATE beta_starts_at=VALUES(beta_starts_at),
+                    beta_ends_at=VALUES(beta_ends_at),post_beta_mode=VALUES(post_beta_mode),
+                    trial_enabled=VALUES(trial_enabled),trial_days=VALUES(trial_days),revision=revision+1,
+                    updated_by=VALUES(updated_by),updated_at=VALUES(updated_at)')
+                ->execute([$product,$start,$end,$mode,(int)$trial,$days,$adminId,$now]);
+            $next=$actual+($before===false?0:1);
+            $snapshot=static fn(array $row):array=>[
+                'beta_starts_at'=>$row['beta_starts_at']===null?null:(int)$row['beta_starts_at'],
+                'beta_ends_at'=>$row['beta_ends_at']===null?null:(int)$row['beta_ends_at'],
+                'post_beta_mode'=>$row['post_beta_mode'],'trial_enabled'=>(bool)$row['trial_enabled'],
+                'trial_days'=>(int)$row['trial_days'],'revision'=>(int)$row['revision'],
+            ];
+            (new Backoffice($db))->audit($adminId,'UPDATE_PRODUCT_OPERATIONS',$product,[
+                'before'=>$before===false?null:$snapshot($before),
+                'after'=>['beta_starts_at'=>$start,'beta_ends_at'=>$end,'post_beta_mode'=>$mode,
+                    'trial_enabled'=>$trial,'trial_days'=>$days,'revision'=>$next],
+            ],$context,$now);
+            return ['beta_starts_at'=>$start,'beta_ends_at'=>$end,'post_beta_mode'=>$mode,
+                'trial_enabled'=>$trial,'trial_days'=>$days,'revision'=>$next,'updated_at'=>$now];
+        });
+    }
+
     public function downloadHosts(int $adminId): array
     {
         Permissions::require($this->db,$adminId,'products.manage');

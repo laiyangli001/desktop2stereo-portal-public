@@ -40,5 +40,14 @@
   "remove": "Kanal entfernen",
   "save_draft": "Entwurf speichern",
   "minimum_supported": "Mindestversion",
-  "save_policy": "Richtlinie speichern"
+  "save_policy": "Richtlinie speichern",
+  "beta_trial": "Beta und Testphase",
+  "beta_start": "Beta-Start",
+  "beta_end": "Beta-Ende",
+  "post_beta_mode": "Nach der Beta-Phase",
+  "free": "Kostenlos",
+  "paid": "Kostenpflichtig",
+  "trial_enabled": "Testphase aktivieren",
+  "trial_days": "Testtage",
+  "save_operations": "Beta- und Testeinstellungen speichern"
 }

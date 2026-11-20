@@ -40,5 +40,14 @@
   "remove": "Supprimer le canal",
   "save_draft": "Enregistrer le brouillon",
   "minimum_supported": "Version minimale prise en charge",
-  "save_policy": "Enregistrer la règle"
+  "save_policy": "Enregistrer la règle",
+  "beta_trial": "Bêta et essai",
+  "beta_start": "Début de la bêta",
+  "beta_end": "Fin de la bêta",
+  "post_beta_mode": "Après la bêta",
+  "free": "Gratuit",
+  "paid": "Payant",
+  "trial_enabled": "Activer l’essai",
+  "trial_days": "Jours d’essai",
+  "save_operations": "Enregistrer les paramètres"
 }

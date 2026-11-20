@@ -40,5 +40,14 @@
   "remove": "刪除管道",
   "save_draft": "儲存草稿",
   "minimum_supported": "最低支援版本",
-  "save_policy": "儲存策略"
+  "save_policy": "儲存策略",
+  "beta_trial": "公測與試用",
+  "beta_start": "公測開始時間",
+  "beta_end": "公測截止時間",
+  "post_beta_mode": "公測後模式",
+  "free": "免費",
+  "paid": "收費",
+  "trial_enabled": "啟用正式期試用",
+  "trial_days": "試用天數",
+  "save_operations": "儲存公測與試用設定"
 }

@@ -40,5 +40,14 @@
   "remove": "채널 삭제",
   "save_draft": "초안 저장",
   "minimum_supported": "최소 지원 버전",
-  "save_policy": "정책 저장"
+  "save_policy": "정책 저장",
+  "beta_trial": "베타 및 체험판",
+  "beta_start": "베타 시작",
+  "beta_end": "베타 종료",
+  "post_beta_mode": "베타 이후",
+  "free": "무료",
+  "paid": "유료",
+  "trial_enabled": "체험판 사용",
+  "trial_days": "체험 일수",
+  "save_operations": "설정 저장"
 }

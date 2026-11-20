@@ -54,6 +54,11 @@ if($productImageWrite){
 }elseif(preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/update-policy$#D',$route,$updatePolicyRoute)&&$write){
     $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
     $data=$manager->savePolicy($adminId,$updatePolicyRoute[1],$input,$context,$now);
+}elseif(preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/product-operations$#D',$route,$productOperationsRoute)){
+    $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
+    $data=$write
+        ?$manager->saveProductOperations($adminId,$productOperationsRoute[1],$input,$context,$now)
+        :$manager->productOperations($adminId,$productOperationsRoute[1]);
 }elseif($write&&preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/delete$#D',$route,$deleteProductRoute)){
     $data=(new D2S\services\ProductCatalog($db))->deleteAllLanguages($adminId,$deleteProductRoute[1],$context,$now);
 }elseif($route==='/products'&&in_array($method,['GET','POST'],true)){

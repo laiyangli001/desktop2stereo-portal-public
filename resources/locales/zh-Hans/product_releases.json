@@ -40,5 +40,14 @@
   "remove": "删除渠道",
   "save_draft": "保存草稿",
   "minimum_supported": "最低支持版本",
-  "save_policy": "保存策略"
+  "save_policy": "保存策略",
+  "beta_trial": "公测与试用",
+  "beta_start": "公测开始时间",
+  "beta_end": "公测截止时间",
+  "post_beta_mode": "公测后的模式",
+  "free": "免费",
+  "paid": "收费",
+  "trial_enabled": "启用正式期试用",
+  "trial_days": "试用天数",
+  "save_operations": "保存公测与试用设置"
 }

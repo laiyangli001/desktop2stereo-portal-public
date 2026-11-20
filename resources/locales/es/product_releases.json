@@ -40,5 +40,14 @@
   "remove": "Eliminar canal",
   "save_draft": "Guardar borrador",
   "minimum_supported": "Versión mínima compatible",
-  "save_policy": "Guardar política"
+  "save_policy": "Guardar política",
+  "beta_trial": "Beta y prueba",
+  "beta_start": "Inicio de beta",
+  "beta_end": "Fin de beta",
+  "post_beta_mode": "Después de beta",
+  "free": "Gratis",
+  "paid": "De pago",
+  "trial_enabled": "Activar prueba",
+  "trial_days": "Días de prueba",
+  "save_operations": "Guardar configuración"
 }

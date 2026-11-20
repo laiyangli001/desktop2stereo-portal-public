@@ -40,5 +40,14 @@
   "remove": "Remove channel",
   "save_draft": "Save draft",
   "minimum_supported": "Minimum supported version",
-  "save_policy": "Save policy"
+  "save_policy": "Save policy",
+  "beta_trial": "Beta and trial",
+  "beta_start": "Beta start",
+  "beta_end": "Beta deadline",
+  "post_beta_mode": "After beta",
+  "free": "Free",
+  "paid": "Paid",
+  "trial_enabled": "Enable trial",
+  "trial_days": "Trial days",
+  "save_operations": "Save beta and trial"
 }

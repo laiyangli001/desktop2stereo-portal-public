@@ -883,6 +883,56 @@
         hosts.append(row);
       }
       hosts.append(hostForm); panel.append(hosts);
+      const operationConfig = await request('/products/' + product.code + '/product-operations');
+      const betaPanel = node('section', null, 'admin-panel');
+      betaPanel.append(node('h3', prtr('beta_trial')));
+      const betaForm = node('form', null, 'operation-form');
+      const localDate = value => {
+        if (!value) return '';
+        const date = new Date(Number(value) * 1000);
+        return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      };
+      const toTimestamp = value => value ? Math.floor(new Date(value).getTime() / 1000) : null;
+      const betaStart = field(betaForm, 'beta_starts_at', prtr('beta_start'), 'datetime-local', localDate(operationConfig.beta_starts_at));
+      const betaEnd = field(betaForm, 'beta_ends_at', prtr('beta_end'), 'datetime-local', localDate(operationConfig.beta_ends_at));
+      const postMode = field(betaForm, 'post_beta_mode', prtr('post_beta_mode'), 'text', operationConfig.post_beta_mode, {
+        choices:[['paid',prtr('paid')],['free',prtr('free')]],
+      });
+      const trialEnabled = field(betaForm, 'trial_enabled', prtr('trial_enabled'), 'checkbox', operationConfig.trial_enabled);
+      const trialDays = field(betaForm, 'trial_days', prtr('trial_days'), 'number', operationConfig.trial_days, {required:true});
+      trialDays.min = '1'; trialDays.max = '3650'; trialDays.step = '1';
+      const saveOperations = node('button', prtr('save_operations'), 'portal-primary'); saveOperations.type = 'submit'; betaForm.append(saveOperations);
+      betaForm.addEventListener('submit', async event => {
+        event.preventDefault(); if (!betaForm.reportValidity()) return;
+        try {
+          await request('/products/' + product.code + '/product-operations', {
+            beta_starts_at: toTimestamp(betaStart.value), beta_ends_at: toTimestamp(betaEnd.value),
+            post_beta_mode: postMode.value, trial_enabled: trialEnabled.checked, trial_days: Number(trialDays.value),
+            revision: operationConfig.revision,
+          });
+          await refresh();
+        } catch (error) { message(error, dialogMessage); }
+      });
+      betaPanel.append(betaForm); panel.append(betaPanel);
+      const policyPanel = node('section', null, 'admin-panel');
+      policyPanel.append(node('h3', prtr('minimum_supported')));
+      for (const [platform, policy] of Object.entries(data.policies || {})) {
+        const policyForm = node('form', null, 'operation-form');
+        const versionInput = field(policyForm, 'minimum_supported_version', platform, 'number', policy.minimum_supported_version, {});
+        versionInput.min = '0'; versionInput.step = '1';
+        const savePolicy = node('button', prtr('save_policy')); savePolicy.type = 'submit'; policyForm.append(savePolicy);
+        policyForm.addEventListener('submit', async event => {
+          event.preventDefault();
+          try {
+            await request('/products/' + product.code + '/update-policy', {
+              platform, minimum_supported_version: Number(versionInput.value), revision: policy.revision,
+            });
+            await refresh();
+          } catch (error) { message(error, dialogMessage); }
+        });
+        policyPanel.append(policyForm);
+      }
+      panel.append(policyPanel);
       const newButton = button(prtr('new_release'), () => editRelease());
       newButton.className = 'portal-primary'; panel.append(newButton);
       if (!data.items.length) panel.append(node('p', prtr('empty')));
