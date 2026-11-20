@@ -1,5 +1,12 @@
 {
   "title": "プラットフォーム設定",
+  "section.heartbeat": "クライアントのハートビート設定",
+  "help.heartbeat": "認証状態を確認する間隔とランダムなずらし幅を設定します。間隔は300～3600秒、ずらし幅は0～20%です。変更は次回のログインまたはハートビート応答から反映されます。",
+  "field.heartbeat_seconds": "ハートビート間隔（秒）",
+  "field.heartbeat_jitter_percent": "ランダムなずらし幅（%）",
+  "action.heartbeat_reset": "既定値に戻す",
+  "message.error.heartbeat_seconds": "ハートビート間隔は300～3600秒で設定してください。",
+  "message.error.heartbeat_jitter": "ずらし幅は0～20%で設定してください。",
   "eyebrow": "プラットフォーム実行",
   "description": "公開テンプレート、既定テーマ、CAPTCHA、SEO、ページキャッシュを一元管理します。機密認証情報は引き続き制限された環境から注入します。",
   "action.maintenance": "システムメンテナンス",

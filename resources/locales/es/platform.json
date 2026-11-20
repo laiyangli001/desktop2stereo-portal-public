@@ -1,5 +1,12 @@
 {
   "title": "Configuración de la plataforma",
+  "section.heartbeat": "Política de heartbeat del cliente",
+  "help.heartbeat": "Configura el intervalo de comprobación de autorización y la variación aleatoria. El intervalo es de 300–3600 segundos y la variación de 0–20 %. Los cambios se aplican en el siguiente inicio de sesión o respuesta de heartbeat.",
+  "field.heartbeat_seconds": "Intervalo de heartbeat (segundos)",
+  "field.heartbeat_jitter_percent": "Variación aleatoria (porcentaje)",
+  "action.heartbeat_reset": "Restaurar valores predeterminados",
+  "message.error.heartbeat_seconds": "El intervalo de heartbeat debe estar entre 300 y 3600 segundos.",
+  "message.error.heartbeat_jitter": "La variación de heartbeat debe estar entre 0 y 20 %.",
   "eyebrow": "Operación de la plataforma",
   "description": "Gestiona en un solo lugar la plantilla pública, el tema predeterminado, el CAPTCHA, el SEO y la caché de páginas. Las credenciales sensibles se siguen inyectando desde el entorno restringido.",
   "action.maintenance": "Mantenimiento del sistema",

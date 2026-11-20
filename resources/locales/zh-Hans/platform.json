@@ -1,5 +1,12 @@
 {
   "title": "平台配置",
+  "section.heartbeat": "客户端心跳策略",
+  "help.heartbeat": "调整客户端检查授权状态的间隔和随机错峰比例。间隔范围为 300–3600 秒，错峰范围为 0–20%。更改后会从下一次登录或心跳响应开始生效。",
+  "field.heartbeat_seconds": "心跳间隔（秒）",
+  "field.heartbeat_jitter_percent": "随机错峰（百分比）",
+  "action.heartbeat_reset": "恢复默认值",
+  "message.error.heartbeat_seconds": "心跳间隔必须在 300 到 3600 秒之间。",
+  "message.error.heartbeat_jitter": "心跳错峰比例必须在 0 到 20 之间。",
   "eyebrow": "平台运行",
   "description": "统一管理前台模板、默认主题、验证码、SEO、页面缓存；敏感凭据仍通过受限环境注入。",
   "action.maintenance": "系统维护",

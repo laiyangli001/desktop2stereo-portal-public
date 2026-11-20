@@ -1,5 +1,12 @@
 {
   "title": "Plattformkonfiguration",
+  "section.heartbeat": "Client-Heartbeat-Richtlinie",
+  "help.heartbeat": "Legen Sie das Intervall für Autorisierungsprüfungen und den zufälligen Versatz fest. Intervall: 300–3600 Sekunden; Versatz: 0–20 %. Änderungen gelten ab der nächsten Anmeldung oder Heartbeat-Antwort.",
+  "field.heartbeat_seconds": "Heartbeat-Intervall (Sekunden)",
+  "field.heartbeat_jitter_percent": "Zufälliger Versatz (Prozent)",
+  "action.heartbeat_reset": "Standardwerte wiederherstellen",
+  "message.error.heartbeat_seconds": "Das Heartbeat-Intervall muss zwischen 300 und 3600 Sekunden liegen.",
+  "message.error.heartbeat_jitter": "Der Heartbeat-Versatz muss zwischen 0 und 20 Prozent liegen.",
   "eyebrow": "Plattformbetrieb",
   "description": "Verwalten Sie öffentliche Vorlage, Standarddesign, CAPTCHA, SEO, und Seitencache zentral. Vertrauliche Zugangsdaten werden weiterhin nur über die eingeschränkte Umgebung bereitgestellt.",
   "action.maintenance": "Systemwartung",

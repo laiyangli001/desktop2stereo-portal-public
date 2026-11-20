@@ -1,5 +1,12 @@
 {
   "title": "Platform settings",
+  "section.heartbeat": "Client heartbeat policy",
+  "help.heartbeat": "Set how often clients check authorization and how much random jitter to apply. The interval is 300–3600 seconds and jitter is 0–20%. Changes apply in the next login or heartbeat response.",
+  "field.heartbeat_seconds": "Heartbeat interval (seconds)",
+  "field.heartbeat_jitter_percent": "Random jitter (percent)",
+  "action.heartbeat_reset": "Restore defaults",
+  "message.error.heartbeat_seconds": "The heartbeat interval must be between 300 and 3600 seconds.",
+  "message.error.heartbeat_jitter": "The heartbeat jitter must be between 0 and 20 percent.",
   "eyebrow": "Platform runtime",
   "description": "Manage the public template, default theme, CAPTCHA, SEO and page cache in one place. Sensitive credentials remain injected through the restricted environment.",
   "action.maintenance": "System maintenance",

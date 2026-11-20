@@ -18,7 +18,7 @@ final readonly class LicenseCredentials
     }
 
     /** Caller must lock and validate the current database entitlement and session first. */
-    public function issue(array $license, string $deviceHash, string $devicePublicKey, int $now, int $sessionVersion): array
+    public function issue(array $license, string $deviceHash, string $devicePublicKey, int $now, int $sessionVersion, array $heartbeat): array
     {
         if (!in_array($license['kind'] ?? '',['trial','formal'],true) ||
             ($license['status'] ?? '') !== 'active' || $now <= 0 || $sessionVersion < 1 ||
@@ -44,8 +44,14 @@ final readonly class LicenseCredentials
             $this->core->wrap($devicePublicKey,$entitlementId,$license['id'],$deviceHash);
         $grantId = bin2hex(random_bytes(16));
         $grant = $base + ['grant_id'=>$grantId] + $this->core->wrap($devicePublicKey,$grantId,$license['id'],$deviceHash);
+        $heartbeatSeconds = $heartbeat['heartbeat_seconds'] ?? null;
+        $jitterPercent = $heartbeat['heartbeat_jitter_percent'] ?? null;
+        if (!is_int($heartbeatSeconds) || $heartbeatSeconds < 300 || $heartbeatSeconds > 3600 ||
+            !is_int($jitterPercent) || $jitterPercent < 0 || $jitterPercent > 20) {
+            throw new Problem('client_heartbeat_configuration_invalid',503);
+        }
         return ['offline_token'=>$this->signer->sign($offline),'core_grant'=>$this->signer->sign($grant),
             'offline_id'=>$entitlementId,'offline_expires_at'=>$deadline,
-            'key_id'=>$this->signer->keyId,'heartbeat_seconds'=>900,'heartbeat_jitter_percent'=>10];
+            'key_id'=>$this->signer->keyId,'heartbeat_seconds'=>$heartbeatSeconds,'heartbeat_jitter_percent'=>$jitterPercent];
     }
 }

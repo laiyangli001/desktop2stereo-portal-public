@@ -1,5 +1,12 @@
 {
   "title": "平台設定",
+  "section.heartbeat": "用戶端心跳策略",
+  "help.heartbeat": "調整用戶端檢查授權狀態的間隔與隨機錯峰比例。間隔範圍為 300–3600 秒，錯峰範圍為 0–20%。變更會從下次登入或心跳回應開始生效。",
+  "field.heartbeat_seconds": "心跳間隔（秒）",
+  "field.heartbeat_jitter_percent": "隨機錯峰（百分比）",
+  "action.heartbeat_reset": "還原預設值",
+  "message.error.heartbeat_seconds": "心跳間隔必須介於 300 到 3600 秒。",
+  "message.error.heartbeat_jitter": "心跳錯峰比例必須介於 0 到 20%。",
   "eyebrow": "平台執行",
   "description": "統一管理前台範本、預設主題、驗證碼、SEO、頁面快取；敏感憑證仍透過受限環境注入。",
   "action.maintenance": "系統維護",

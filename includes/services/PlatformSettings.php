@@ -24,6 +24,8 @@ final readonly class PlatformSettings
             'captcha_ttl_seconds' => 300,
             'captcha_tolerance_px' => 14,
             'page_cache_ttl_seconds' => 300,
+            'client_heartbeat_seconds' => 900,
+            'client_heartbeat_jitter_percent' => 10,
             'seo_index' => true,
             'seo_sitemap' => true,
         ];
@@ -33,6 +35,15 @@ final readonly class PlatformSettings
     {
         $stored = $this->read();
         return self::normalize(array_replace(self::defaults(), $stored));
+    }
+
+    public function heartbeatConfiguration(): array
+    {
+        $configuration = $this->publicConfiguration();
+        return [
+            'heartbeat_seconds' => $configuration['client_heartbeat_seconds'],
+            'heartbeat_jitter_percent' => $configuration['client_heartbeat_jitter_percent'],
+        ];
     }
 
     public function captchaConfiguration(): array
@@ -89,6 +100,10 @@ final readonly class PlatformSettings
                 'captcha_ttl_seconds'=>$merged['captcha_ttl_seconds'],
                 'captcha_tolerance_px'=>$merged['captcha_tolerance_px'],
                 'page_cache_ttl_seconds'=>$merged['page_cache_ttl_seconds'],
+                'client_heartbeat_seconds_before'=>$current['client_heartbeat_seconds'] ?? self::defaults()['client_heartbeat_seconds'],
+                'client_heartbeat_seconds_after'=>$merged['client_heartbeat_seconds'],
+                'client_heartbeat_jitter_percent_before'=>$current['client_heartbeat_jitter_percent'] ?? self::defaults()['client_heartbeat_jitter_percent'],
+                'client_heartbeat_jitter_percent_after'=>$merged['client_heartbeat_jitter_percent'],
                 'seo_index'=>$merged['seo_index'],
                 'seo_sitemap'=>$merged['seo_sitemap'],
             ],$now);
@@ -135,6 +150,8 @@ final readonly class PlatformSettings
             'captcha_ttl_seconds' => self::boundedInteger($values['captcha_ttl_seconds'] ?? $defaults['captcha_ttl_seconds'],60,600,'platform_captcha_ttl_invalid'),
             'captcha_tolerance_px' => self::boundedInteger($values['captcha_tolerance_px'] ?? $defaults['captcha_tolerance_px'],8,24,'platform_captcha_tolerance_invalid'),
             'page_cache_ttl_seconds' => self::boundedInteger($values['page_cache_ttl_seconds'] ?? $defaults['page_cache_ttl_seconds'],0,3600,'platform_cache_ttl_invalid'),
+            'client_heartbeat_seconds' => self::boundedInteger($values['client_heartbeat_seconds'] ?? $defaults['client_heartbeat_seconds'],300,3600,'platform_heartbeat_seconds_invalid'),
+            'client_heartbeat_jitter_percent' => self::boundedInteger($values['client_heartbeat_jitter_percent'] ?? $defaults['client_heartbeat_jitter_percent'],0,20,'platform_heartbeat_jitter_invalid'),
             'seo_index' => self::boolean($values['seo_index'] ?? $defaults['seo_index'],'platform_seo_index_invalid'),
             'seo_sitemap' => self::boolean($values['seo_sitemap'] ?? $defaults['seo_sitemap'],'platform_seo_sitemap_invalid'),
         ];

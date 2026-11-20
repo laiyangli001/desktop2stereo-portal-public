@@ -80,6 +80,21 @@ $platformInput = static function(string $name, string $type='text', array $attri
             </div>
         </section>
 
+        <section class="platform-settings-section" aria-labelledby="platform-heartbeat-title">
+            <div class="platform-section-heading">
+                <div><h2 id="platform-heartbeat-title"><?= $platformText('section.heartbeat') ?></h2><p><?= $platformText('help.heartbeat') ?></p></div>
+                <button type="button" id="platform-heartbeat-reset"><?= $platformText('action.heartbeat_reset') ?></button>
+            </div>
+            <div class="platform-form-grid">
+                <label for="platform-client-heartbeat-seconds"><?= $platformText('field.heartbeat_seconds') ?>
+                    <?= $platformInput('client_heartbeat_seconds','number',['min'=>300,'max'=>3600,'step'=>1,'value'=>$platformValues['client_heartbeat_seconds']]) ?>
+                </label>
+                <label for="platform-client-heartbeat-jitter-percent"><?= $platformText('field.heartbeat_jitter_percent') ?>
+                    <?= $platformInput('client_heartbeat_jitter_percent','number',['min'=>0,'max'=>20,'step'=>1,'value'=>$platformValues['client_heartbeat_jitter_percent']]) ?>
+                </label>
+            </div>
+        </section>
+
         <section class="platform-settings-section" aria-labelledby="platform-seo-title">
             <div class="platform-section-heading">
                 <div><h2 id="platform-seo-title"><?= $platformText('section.seo_cache') ?></h2><p><?= $platformText('help.seo_cache') ?></p></div>

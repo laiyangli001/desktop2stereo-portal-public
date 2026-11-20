@@ -1,5 +1,12 @@
 {
   "title": "플랫폼 설정",
+  "section.heartbeat": "클라이언트 하트비트 정책",
+  "help.heartbeat": "인증 상태 확인 간격과 무작위 지연 비율을 설정합니다. 간격은 300~3600초, 지연은 0~20%입니다. 변경 사항은 다음 로그인 또는 하트비트 응답부터 적용됩니다.",
+  "field.heartbeat_seconds": "하트비트 간격(초)",
+  "field.heartbeat_jitter_percent": "무작위 지연(%)",
+  "action.heartbeat_reset": "기본값 복원",
+  "message.error.heartbeat_seconds": "하트비트 간격은 300~3600초여야 합니다.",
+  "message.error.heartbeat_jitter": "하트비트 지연 비율은 0~20%여야 합니다.",
   "eyebrow": "플랫폼 운영",
   "description": "공개 템플릿, 기본 테마, CAPTCHA, SEO 및 페이지 캐시를 한곳에서 관리합니다. 민감한 자격 증명은 계속 제한된 환경에서만 주입합니다.",
   "action.maintenance": "시스템 유지 관리",

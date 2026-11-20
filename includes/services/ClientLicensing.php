@@ -64,7 +64,8 @@ final readonly class ClientLicensing
             $version = (int)$license['session_version']+1;
             // Signing and resource wrapping happen before any commit; missing secrets cannot start a trial.
             $this->credentials->registerSigningKey($db,$now);
-            $bundle = $this->credentials->issue($license,$deviceHash,$publicKey,$now,$version);
+            $bundle = $this->credentials->issue($license,$deviceHash,$publicKey,$now,$version,
+                (new PlatformSettings($db))->heartbeatConfiguration());
             $db->prepare('INSERT INTO portal_devices (user_id,device_hash,public_key,first_seen_at,last_seen_at)
                 VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE public_key=?,last_seen_at=?')
                 ->execute([$id,$deviceHash,$publicKey,$now,$now,$publicKey,$now]);
@@ -92,7 +93,8 @@ final readonly class ClientLicensing
             [$user,$session,$license] = $this->session($token,$deviceHash,$now);
             $publicKey = $session['public_key'];
             $this->credentials->registerSigningKey($db,$now);
-            $bundle = $this->credentials->issue($license,$deviceHash,$publicKey,$now,(int)$session['session_version']);
+            $bundle = $this->credentials->issue($license,$deviceHash,$publicKey,$now,(int)$session['session_version'],
+                (new PlatformSettings($db))->heartbeatConfiguration());
             $db->prepare('UPDATE portal_client_sessions SET verified_at=?,expires_at=? WHERE user_id=? AND product=?')
                 ->execute([$now,$bundle['offline_expires_at'],$user['id'],$license['product']]);
             $db->prepare('UPDATE portal_devices SET last_seen_at=? WHERE user_id=? AND device_hash=?')

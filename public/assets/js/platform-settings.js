@@ -4,6 +4,7 @@
   const form = document.querySelector('#platform-settings-form');
   const message = document.querySelector('#platform-message');
   const purgeButton = document.querySelector('#platform-cdn-purge');
+  const heartbeatReset = document.querySelector('#platform-heartbeat-reset');
   if (!form) return;
   let pending = false;
 
@@ -21,6 +22,8 @@
     platform_captcha_ttl_invalid: 'platform.message.error.captcha_ttl',
     platform_captcha_tolerance_invalid: 'platform.message.error.captcha_tolerance',
     platform_cache_ttl_invalid: 'platform.message.error.cache_ttl',
+    platform_heartbeat_seconds_invalid: 'platform.message.error.heartbeat_seconds',
+    platform_heartbeat_jitter_invalid: 'platform.message.error.heartbeat_jitter',
     platform_seo_index_invalid: 'platform.message.error.invalid',
     platform_seo_sitemap_invalid: 'platform.message.error.invalid',
     service_unavailable: 'platform.message.error.service',
@@ -104,6 +107,13 @@
     } finally {
       busy(false);
     }
+  });
+
+  heartbeatReset?.addEventListener('click', () => {
+    const interval = form.elements.namedItem('client_heartbeat_seconds');
+    const jitter = form.elements.namedItem('client_heartbeat_jitter_percent');
+    if (interval) interval.value = '900';
+    if (jitter) jitter.value = '10';
   });
 
   purgeButton?.addEventListener('click', async () => {

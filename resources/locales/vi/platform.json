@@ -1,5 +1,12 @@
 {
   "title": "Cấu hình nền tảng",
+  "section.heartbeat": "Chính sách heartbeat của ứng dụng khách",
+  "help.heartbeat": "Thiết lập khoảng thời gian kiểm tra quyền và độ lệch ngẫu nhiên. Khoảng thời gian từ 300–3600 giây, độ lệch từ 0–20%. Thay đổi có hiệu lực từ lần đăng nhập hoặc phản hồi heartbeat tiếp theo.",
+  "field.heartbeat_seconds": "Khoảng thời gian heartbeat (giây)",
+  "field.heartbeat_jitter_percent": "Độ lệch ngẫu nhiên (phần trăm)",
+  "action.heartbeat_reset": "Khôi phục mặc định",
+  "message.error.heartbeat_seconds": "Khoảng thời gian heartbeat phải từ 300 đến 3600 giây.",
+  "message.error.heartbeat_jitter": "Độ lệch heartbeat phải từ 0 đến 20%.",
   "eyebrow": "Vận hành nền tảng",
   "description": "Quản lý tập trung mẫu giao diện công khai, chủ đề mặc định, CAPTCHA, SEO và bộ nhớ đệm trang. Thông tin xác thực nhạy cảm vẫn chỉ được cung cấp qua môi trường hạn chế.",
   "action.maintenance": "Bảo trì hệ thống",
