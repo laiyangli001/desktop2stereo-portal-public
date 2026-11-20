@@ -100,7 +100,68 @@ final readonly class LicenseOverview
         return ['items'=>$owned];
     }
 
-    public function devices(int $userId, string $product = 'desktop2stereo', string $locale='en'): array
+    public function trialOffer(int $userId,string $product,int $now): ?array
+    {
+        $product=ProductCatalog::code($product);
+        $license=$this->db->prepare('SELECT id FROM portal_licenses WHERE user_id=? AND product=?');
+        $license->execute([$userId,$product]);
+        if($license->fetchColumn()!==false)return null;
+        $query=$this->db->prepare('SELECT beta_starts_at,beta_ends_at,post_beta_mode,trial_enabled,trial_days,revision
+            FROM portal_product_operations WHERE product_code=?');
+        $query->execute([$product]);
+        $operations=$query->fetch();
+        if($operations===false||!(bool)$operations['trial_enabled']||$operations['post_beta_mode']!=='paid')return null;
+        $start=$operations['beta_starts_at']===null?null:(int)$operations['beta_starts_at'];
+        $end=$operations['beta_ends_at']===null?null:(int)$operations['beta_ends_at'];
+        if(($start===null)!==($end===null)||($end!==null&&$now<$end))return null;
+        $member=$this->db->prepare('SELECT 1 FROM portal_product_beta_members WHERE user_id=? AND product_code=? AND beta_revision=?');
+        $member->execute([$userId,$product,(int)$operations['revision']]);
+        if($member->fetchColumn()!==false)return null;
+        return ['available'=>true,'trial_days'=>(int)$operations['trial_days']];
+    }
+
+    public function claimTrial(int $userId,string $product,array $context,int $now): array
+    {
+        $product=ProductCatalog::code($product);
+        return Database::transaction($this->db,function(PDO $db)use($userId,$product,$context,$now):array{
+            $productQuery=$db->prepare('SELECT enabled,deleted_at FROM portal_products WHERE code=? FOR UPDATE');
+            $productQuery->execute([$product]);$productRow=$productQuery->fetch();
+            if($productRow===false||!(bool)$productRow['enabled']||$productRow['deleted_at']!==null)
+                throw new Problem('product_not_found',404);
+            $query=$db->prepare('SELECT beta_starts_at,beta_ends_at,post_beta_mode,trial_enabled,trial_days,revision
+                FROM portal_product_operations WHERE product_code=? FOR UPDATE');
+            $query->execute([$product]);$operations=$query->fetch();
+            if($operations===false||!(bool)$operations['trial_enabled']||$operations['post_beta_mode']!=='paid')
+                throw new Problem('product_trial_not_available',409);
+            $start=$operations['beta_starts_at']===null?null:(int)$operations['beta_starts_at'];
+            $end=$operations['beta_ends_at']===null?null:(int)$operations['beta_ends_at'];
+            if(($start===null)!==($end===null)||($end!==null&&$now<$end))
+                throw new Problem('product_trial_not_available',409);
+            $member=$db->prepare('SELECT 1 FROM portal_product_beta_members WHERE user_id=? AND product_code=? AND beta_revision=?');
+            $member->execute([$userId,$product,(int)$operations['revision']]);
+            if($member->fetchColumn()!==false)throw new Problem('product_trial_not_available',409);
+
+            $query=$db->prepare('SELECT * FROM portal_licenses WHERE user_id=? AND product=? FOR UPDATE');
+            $query->execute([$userId,$product]);$existing=$query->fetch();
+            if($existing!==false){
+                if($existing['status']==='active'&&($existing['expires_at']===null||(int)$existing['expires_at']>$now))
+                    return ['license'=>$this->view($existing),'claimed'=>false];
+                throw new Problem('product_trial_not_available',409);
+            }
+            $trialDays=(int)$operations['trial_days'];
+            $trialEnd=$now+$trialDays*86400;
+            $license=['id'=>bin2hex(random_bytes(16)),'user_id'=>$userId,'product'=>$product,'kind'=>'trial',
+                'status'=>'active','trial_started_at'=>$now,'expires_at'=>$trialEnd];
+            $db->prepare('INSERT INTO portal_licenses
+                (id,user_id,product,kind,status,trial_started_at,expires_at,created_at,updated_at)
+                VALUES(?,?,?,\'trial\',\'active\',?,?,?,?)')
+                ->execute([$license['id'],$userId,$product,$now,$trialEnd,$now,$now]);
+            Audit::user($db,$userId,Audit::email($db,$userId),'CLAIM_PRODUCT_TRIAL','SUCCESS',$context,$now);
+            return ['license'=>$this->view($license),'claimed'=>true,'trial_days'=>$trialDays];
+        });
+    }
+
+    public function devices(int $userId, string $product = 'desktop2stereo', string $locale='en',?int $now=null): array
     {
         ProductCatalog::code($product);
         $licenses=$this->all($userId,$locale);$products=[];
@@ -128,6 +189,7 @@ final readonly class LicenseOverview
             FROM portal_client_sessions WHERE user_id=? AND product=?');
         $session->execute([$userId,$product]);$current=$session->fetch();
         return ['product'=>$product,'selected_product'=>$selected,'license'=>$license,'licenses'=>$licenses,
+            'trial_offer'=>$this->trialOffer($userId,$product,$now??time()),
             'products'=>array_values($products),'devices'=>$devices->fetchAll(),
             'current_session'=>$current===false?null:$current];
     }

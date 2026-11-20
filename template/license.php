@@ -43,6 +43,7 @@ $legacyDomTranslation=false;
             <p id="entitlement-detail"></p>
         </div>
         <a id="license-purchase" href="<?= d2s_escape(d2s_url('/shop')) ?>" class="site-secondary"><?= d2s_escape(d2s_tr('licensing.purchase')) ?></a>
+        <button id="license-claim-trial" type="button" class="site-secondary" hidden></button>
     </section>
     <div class="license-grid">
         <section class="portal-card">

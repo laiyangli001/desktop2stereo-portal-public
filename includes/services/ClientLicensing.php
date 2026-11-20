@@ -145,8 +145,6 @@ final readonly class ClientLicensing
         }elseif($configured&&$operations['post_beta_mode']==='free'&&
             ($betaEnd===null||$now>=$betaEnd)){
             $kind='formal';
-        }elseif((bool)$operations['trial_enabled']){
-            $kind='trial';$expiresAt=$now+(int)$operations['trial_days']*86400;
         }elseif(!$configured&&$product==='desktop2stereo'){
             $kind='trial';$expiresAt=$now+30*86400;
         }

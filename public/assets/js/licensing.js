@@ -13,6 +13,7 @@ const refresh = document.querySelector('#license-refresh');
 const selector = document.querySelector('#license-product');
 const productLabel = document.querySelector('#license-product-title');
 const purchase = document.querySelector('#license-purchase');
+const claimTrialButton = document.querySelector('#license-claim-trial');
 const overview = document.querySelector('#license-overview');
 const overviewList = document.querySelector('#license-overview-list');
 const downloads = document.querySelector('#license-downloads');
@@ -48,6 +49,7 @@ function controls() {
   refresh.disabled = busy;
   selector.disabled = busy;
   logout.disabled = busy || !session;
+  claimTrialButton.disabled = busy;
   for (const button of overviewList.querySelectorAll('button')) button.disabled = busy;
 }
 function switchProduct(product) {
@@ -78,6 +80,9 @@ function renderProducts(data) {
   if (selectedProduct !== 'desktop2stereo') target.searchParams.set('product', selectedProduct);
   purchase.href = target.pathname + target.search;
   purchase.hidden = selected.retired || data.license?.kind === 'formal' || Boolean(data.license && data.license.status !== 'active');
+  const offer = data.trial_offer;
+  claimTrialButton.hidden = selected.retired || !offer?.available;
+  if (!claimTrialButton.hidden) claimTrialButton.textContent = tr('licensing.trial.claim', {days:Number(offer.trial_days)});
   overview.hidden = licenses.length === 0 && products.length <= 1;
   overviewList.replaceChildren();
   if (!licenses.length) overviewList.append(text('p', tr('licensing.products.empty')));
@@ -230,6 +235,30 @@ logout.addEventListener('click', async () => {
     notice.textContent = tr('licensing.logout.success');
   } catch (error) {
     notice.textContent = error.message === 'client_session_changed' ? tr('licensing.logout.changed') : tr('licensing.logout.failed');
+  } finally {
+    mutating = false;
+    controls();
+  }
+});
+
+claimTrialButton.addEventListener('click', async () => {
+  if (mutating || claimTrialButton.hidden) return;
+  const cookie = document.cookie.split('; ').find(value => value.startsWith('D2S_USER_SESSION_CSRF='));
+  mutating = true;
+  controls();
+  try {
+    const response = await fetch('/api/v2/me/license/trial/claim', {
+      method:'POST', credentials:'same-origin',
+      headers:{'Content-Type':'application/json','X-D2S-Locale':locale,'X-CSRF-Token':cookie ? decodeURIComponent(cookie.split('=')[1]) : ''},
+      body:JSON.stringify({product:selectedProduct}),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) throw new Error(result.error || 'service_unavailable');
+    await load();
+    notice.textContent = tr('licensing.trial.claimed', {days:Number(result.data?.trial_days || 0)});
+  } catch (error) {
+    notice.textContent = error.message === 'product_trial_not_available'
+      ? tr('licensing.trial.unavailable') : tr('licensing.errors.unavailable');
   } finally {
     mutating = false;
     controls();

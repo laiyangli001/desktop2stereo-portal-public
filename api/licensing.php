@@ -19,7 +19,7 @@ $clientBootstrapRoute=preg_match('#^/api/v1/products/([a-z][a-z0-9_-]{2,31})/boo
 $clientDownloadsRoute=preg_match('#^/api/v1/products/([a-z][a-z0-9_-]{2,31})/update-downloads$#D',$path,$downloadsMatch)===1;
 $clientEnvironmentRoute=$path==='/api/v2/client/environment';
 if($clientBootstrapRoute||$clientDownloadsRoute||$clientEnvironmentRoute)header('Cache-Control: no-store, private, max-age=0');
-$methods = ['/api/v2/license/keys'=>'GET','/api/v2/me/license'=>'GET','/api/v2/me/license/devices'=>'GET','/api/v2/me/software-downloads'=>'GET','/api/v2/me/license/session/logout'=>'POST',
+$methods = ['/api/v2/license/keys'=>'GET','/api/v2/me/license'=>'GET','/api/v2/me/license/devices'=>'GET','/api/v2/me/software-downloads'=>'GET','/api/v2/me/license/trial/claim'=>'POST','/api/v2/me/license/session/logout'=>'POST',
     '/api/v2/client/login'=>'POST','/api/v2/client/heartbeat'=>'POST','/api/v2/client/logout'=>'POST',
     '/api/v2/client/environment'=>'POST','/api/v2/admin/license-keys'=>'GET','/api/v2/admin/license-keys/activate'=>'POST',
     '/api/v2/admin/license-keys/retire'=>'POST'];
@@ -88,7 +88,14 @@ if (str_starts_with($path,'/api/v2/admin/license-keys')) {
         $data = (new LicenseOverview($db))->softwareDownloads($owner['id'],d2s_locale_code(),$now,SecretBox::fromEnvironment());
     } elseif ($method === 'GET' && $path === '/api/v2/me/license/devices') {
         $owner = HttpRequest::session('user',new WebSessions($db),false,$now);
-        $data = (new LicenseOverview($db))->devices($owner['id'],$productInput($_GET['product'] ?? 'desktop2stereo'),d2s_locale_code());
+        header('Cache-Control: no-store, private, max-age=0');
+        $data = (new LicenseOverview($db))->devices($owner['id'],$productInput($_GET['product'] ?? 'desktop2stereo'),d2s_locale_code(),$now);
+    } elseif ($method === 'POST' && $path === '/api/v2/me/license/trial/claim') {
+        $owner = HttpRequest::session('user',new WebSessions($db),true,$now);
+        $input = HttpRequest::json();
+        $product = $productInput($input['product'] ?? 'desktop2stereo');
+        header('Cache-Control: no-store, private, max-age=0');
+        $data = (new LicenseOverview($db))->claimTrial($owner['id'],$product,Audit::context($_SERVER),$now);
     } elseif ($method === 'POST' && $path === '/api/v2/me/license/session/logout') {
         $owner = HttpRequest::session('user',new WebSessions($db),true,$now);
         $input = HttpRequest::json();
