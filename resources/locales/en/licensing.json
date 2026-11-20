@@ -1,4 +1,9 @@
 {
+  "downloads.title": "Software downloads",
+  "downloads.copy": "Copy SHA-256",
+  "downloads.copied": "Copied",
+  "downloads.passcode": "Passcode",
+  "downloads.no_channels": "No download sources are currently available.",
   "page.title": "License management",
   "page.eyebrow": "Account license",
   "page.heading": "License and devices",

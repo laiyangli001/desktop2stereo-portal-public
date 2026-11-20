@@ -1,4 +1,9 @@
 {
+  "downloads.title": "Software-Downloads",
+  "downloads.copy": "SHA-256 kopieren",
+  "downloads.copied": "Kopiert",
+  "downloads.passcode": "Entpackcode",
+  "downloads.no_channels": "Derzeit sind keine Downloadquellen verfügbar.",
   "page.title": "Lizenzverwaltung",
   "page.eyebrow": "Kontolizenz",
   "page.heading": "Lizenz und Geräte",

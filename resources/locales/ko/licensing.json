@@ -1,4 +1,9 @@
 {
+  "downloads.title": "소프트웨어 다운로드",
+  "downloads.copy": "SHA-256 복사",
+  "downloads.copied": "복사됨",
+  "downloads.passcode": "압축 해제 코드",
+  "downloads.no_channels": "현재 사용할 수 있는 다운로드 소스가 없습니다.",
   "page.title": "라이선스 관리",
   "page.eyebrow": "계정 라이선스",
   "page.heading": "라이선스 및 기기",

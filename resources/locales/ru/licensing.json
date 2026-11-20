@@ -1,4 +1,9 @@
 {
+  "downloads.title": "Загрузки программ",
+  "downloads.copy": "Копировать SHA-256",
+  "downloads.copied": "Скопировано",
+  "downloads.passcode": "Код распаковки",
+  "downloads.no_channels": "Сейчас нет доступных источников загрузки.",
   "page.title": "Управление лицензией",
   "page.eyebrow": "Лицензия аккаунта",
   "page.heading": "Лицензия и устройства",

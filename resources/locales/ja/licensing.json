@@ -1,4 +1,9 @@
 {
+  "downloads.title": "ソフトウェアのダウンロード",
+  "downloads.copy": "SHA-256をコピー",
+  "downloads.copied": "コピーしました",
+  "downloads.passcode": "解凍コード",
+  "downloads.no_channels": "現在利用できるダウンロード元はありません。",
   "page.title": "ライセンス管理",
   "page.eyebrow": "アカウントライセンス",
   "page.heading": "ライセンスとデバイス",

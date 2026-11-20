@@ -1,4 +1,9 @@
 {
+  "downloads.title": "软件下载",
+  "downloads.copy": "复制 SHA-256",
+  "downloads.copied": "已复制",
+  "downloads.passcode": "提取码",
+  "downloads.no_channels": "当前没有可用下载渠道。",
   "page.title": "授权管理",
   "page.eyebrow": "账户授权",
   "page.heading": "授权与设备",

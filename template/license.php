@@ -32,6 +32,10 @@ $legacyDomTranslation=false;
         <h2><?= d2s_escape(d2s_tr('licensing.products.title')) ?></h2>
         <div id="license-overview-list" class="license-overview-list account-records"></div>
     </section>
+    <section id="license-downloads" class="portal-card" hidden>
+        <h2><?= d2s_escape(d2s_tr('licensing.downloads.title')) ?></h2>
+        <div id="license-download-list" class="device-list account-records" aria-live="polite"></div>
+    </section>
     <section class="license-hero portal-card" aria-labelledby="entitlement-title">
         <div>
             <p class="license-label" id="license-product-title">DESKTOP2STEREO</p>

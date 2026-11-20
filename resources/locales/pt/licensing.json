@@ -1,4 +1,9 @@
 {
+  "downloads.title": "Downloads de software",
+  "downloads.copy": "Copiar SHA-256",
+  "downloads.copied": "Copiado",
+  "downloads.passcode": "Código de extração",
+  "downloads.no_channels": "Não há fontes de download disponíveis.",
   "page.title": "Gerenciamento de licenças",
   "page.eyebrow": "Licença da conta",
   "page.heading": "Licença e dispositivos",

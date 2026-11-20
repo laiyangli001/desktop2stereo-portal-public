@@ -52,6 +52,54 @@ final readonly class LicenseOverview
         return $items;
     }
 
+    public function softwareDownloads(int $userId,string $locale,int $now,SecretBox $secrets): array
+    {
+        $owned=[];
+        foreach($this->all($userId,$locale)as$license){
+            if($license['kind']!=='formal'||$license['status']!=='active'||
+                ($license['expires_at']!==null&&(int)$license['expires_at']<=$now)||
+                ($license['trial_started_at']!==null&&(int)$license['trial_started_at']>$now))continue;
+            $product=$license['product'];
+            $releases=$this->db->prepare("SELECT id,platform,version_code,version_name,release_notes,published_at
+                FROM portal_product_releases WHERE product_code=? AND status='published'
+                ORDER BY platform,version_code DESC");
+            $releases->execute([$product]);$latest=[];
+            foreach($releases->fetchAll()as$release){
+                if(isset($latest[$release['platform']]))continue;
+                $release['version_code']=(int)$release['version_code'];
+                $release['published_at']=$release['published_at']===null?null:(int)$release['published_at'];
+                $minimum=$this->db->prepare('SELECT minimum_supported_version FROM portal_product_update_policies WHERE product_code=? AND platform=?');
+                $minimum->execute([$product,$release['platform']]);
+                $release['minimum_supported_version']=(int)($minimum->fetchColumn()?:0);
+                $fileQuery=$this->db->prepare('SELECT id,architecture,file_format,file_name,byte_size,sha256,android_package_name,android_signing_sha256
+                    FROM portal_product_release_files WHERE release_id=? ORDER BY architecture,file_format');
+                $fileQuery->execute([$release['id']]);$release['files']=[];
+                foreach($fileQuery->fetchAll()as$file){
+                    $file['byte_size']=(int)$file['byte_size'];$file['channels']=[];
+                    $channelQuery=$this->db->prepare('SELECT c.id,c.channel_name,c.provider,c.region_code,c.download_url,c.passcode_ciphertext,c.sort_order
+                        FROM portal_product_download_channels c JOIN portal_product_download_hosts h
+                            ON h.hostname=c.hostname AND h.enabled=1
+                        WHERE c.file_id=? AND c.enabled=1 ORDER BY c.sort_order,c.id');
+                    $channelQuery->execute([$file['id']]);
+                    foreach($channelQuery->fetchAll()as$channel){
+                        $passcode=$channel['passcode_ciphertext']===null?null:
+                            $secrets->decrypt($channel['passcode_ciphertext'],'product-download-channel:'.$channel['id']);
+                        $file['channels'][]=['channel_name'=>$channel['channel_name'],'provider'=>$channel['provider'],
+                            'region_code'=>$channel['region_code'],'download_url'=>$channel['download_url'],
+                            'passcode'=>$passcode,'sort_order'=>(int)$channel['sort_order']];
+                    }
+                    unset($file['id']);
+                    $release['files'][]=$file;
+                }
+                unset($release['id']);
+                $latest[$release['platform']]=$release;
+            }
+            if($latest!==[])$owned[]=['product'=>$product,'title'=>$license['title'],'content_locale'=>$license['content_locale'],
+                'platforms'=>array_values($latest)];
+        }
+        return ['items'=>$owned];
+    }
+
     public function devices(int $userId, string $product = 'desktop2stereo', string $locale='en'): array
     {
         ProductCatalog::code($product);

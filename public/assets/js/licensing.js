@@ -15,6 +15,8 @@ const productLabel = document.querySelector('#license-product-title');
 const purchase = document.querySelector('#license-purchase');
 const overview = document.querySelector('#license-overview');
 const overviewList = document.querySelector('#license-overview-list');
+const downloads = document.querySelector('#license-downloads');
+const downloadList = document.querySelector('#license-download-list');
 const defaultTitle = productLabel.textContent.trim();
 const initialQuery = new URLSearchParams(location.search);
 let selectedProduct = initialQuery.get('product') || 'desktop2stereo';
@@ -93,6 +95,54 @@ function renderProducts(data) {
   }
 }
 
+async function loadSoftwareDownloads(currentRequest) {
+  try {
+    const response = await fetch('/api/v2/me/software-downloads', { credentials:'same-origin', headers:{'X-D2S-Locale':locale} });
+    const result = await response.json();
+    if (currentRequest !== sequence) return;
+    if (!response.ok || !result.success) throw new Error(result.error || 'service_unavailable');
+    const items = Array.isArray(result.data?.items) ? result.data.items : [];
+    downloadList.replaceChildren();
+    downloads.hidden = items.length === 0;
+    for (const product of items) {
+      const card = document.createElement('article'); card.className = 'device-item';
+      const title = text('h3', product.title || product.product); title.lang = product.content_locale || locale; card.append(title);
+      for (const release of product.platforms || []) {
+        const platform = document.createElement('section');
+        platform.append(text('h4', release.platform + ' · ' + release.version_name + ' (' + release.version_code + ')'));
+        if (release.release_notes) platform.append(text('p', release.release_notes));
+        for (const file of release.files || []) {
+          const filePanel = document.createElement('div'); filePanel.className = 'device-item';
+          filePanel.append(text('strong', file.file_name));
+          filePanel.append(text('p', file.architecture + ' · ' + file.file_format + ' · ' + Number(file.byte_size).toLocaleString(locale) + ' B'));
+          const hashRow = document.createElement('div'); hashRow.className = 'operation-panel-actions';
+          hashRow.append(text('code', 'SHA-256: ' + file.sha256));
+          const copy = text('button', tr('licensing.downloads.copy')); copy.type = 'button';
+          copy.addEventListener('click', async () => {
+            try { await navigator.clipboard.writeText(file.sha256); copy.textContent = tr('licensing.downloads.copied'); }
+            catch { copy.textContent = file.sha256; }
+          });
+          hashRow.append(copy); filePanel.append(hashRow);
+          for (const channel of file.channels || []) {
+            const channelRow = document.createElement('p');
+            const link = text('a', channel.channel_name + (channel.provider ? ' · ' + channel.provider : '') + ' · ' + channel.region_code);
+            link.href = channel.download_url; link.target = '_blank'; link.rel = 'noopener noreferrer';
+            channelRow.append(link);
+            if (channel.passcode) channelRow.append(text('span', ' · ' + tr('licensing.downloads.passcode') + ': ' + channel.passcode));
+            filePanel.append(channelRow);
+          }
+          if (!(file.channels || []).length) filePanel.append(text('p', tr('licensing.downloads.no_channels')));
+          platform.append(filePanel);
+        }
+        card.append(platform);
+      }
+      downloadList.append(card);
+    }
+  } catch {
+    if (currentRequest === sequence) downloads.hidden = true;
+  }
+}
+
 async function load(preferOwned = false) {
   const currentRequest = ++sequence;
   app.setAttribute('aria-busy', 'true');
@@ -106,6 +156,8 @@ async function load(preferOwned = false) {
     if (currentRequest !== sequence) return;
     if (!response.ok || !result.success) throw new Error(result.error || 'service_unavailable');
     const data = result.data;
+    await loadSoftwareDownloads(currentRequest);
+    if (currentRequest !== sequence) return;
     if (preferOwned && !selectionExplicit && Array.isArray(data.licenses) && data.licenses.length &&
         (!data.license || state(data.license) !== 'active')) {
       const preferred = data.licenses.find(item => state(item) === 'active') || data.licenses[0];

@@ -1,4 +1,9 @@
 {
+  "downloads.title": "軟體下載",
+  "downloads.copy": "複製 SHA-256",
+  "downloads.copied": "已複製",
+  "downloads.passcode": "提取碼",
+  "downloads.no_channels": "目前沒有可用下載渠道。",
     "page.title": "授權管理",
     "page.eyebrow": "賬戶授權",
     "page.heading": "授權與設備",

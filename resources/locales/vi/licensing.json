@@ -1,4 +1,9 @@
 {
+  "downloads.title": "Tải phần mềm",
+  "downloads.copy": "Sao chép SHA-256",
+  "downloads.copied": "Đã sao chép",
+  "downloads.passcode": "Mã giải nén",
+  "downloads.no_channels": "Hiện không có nguồn tải xuống nào.",
   "page.title": "Quản lý giấy phép",
   "page.eyebrow": "Giấy phép tài khoản",
   "page.heading": "Giấy phép và thiết bị",
