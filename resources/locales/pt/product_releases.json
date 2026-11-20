@@ -1,4 +1,9 @@
 {
+  "edit_channel": "Editar canal",
+  "remove_channel": "Remover canal",
+  "remove_channel_confirm": "Remover este canal desativado?",
+  "clear_passcode": "Limpar código de acesso atual",
+  "passcode_blank_preserves": "Deixe em branco para manter o código atual.",
   "platform_versions": "Plataformas / versões mais recentes",
   "operating_mode": "Modo de operação",
   "beta_ends_at": "Fim da beta",

@@ -71,6 +71,69 @@ final readonly class ProductReleaseManager
         return ['items'=>$items,'policies'=>$policyList,'download_hosts'=>$this->downloadHosts($adminId)['items']];
     }
 
+    public function updateDownloadChannel(int $adminId,string $product,string $channelId,array $input,array $context,int $now,bool $remove=false): array
+    {
+        Permissions::require($this->db,$adminId,'products.manage');
+        $product=ProductCatalog::code($product);
+        $channelId=self::id($channelId);
+        $channel=$remove?null:$this->validateChannel($input);
+        if($channel!==null&&$channel['id']!==null&&$channel['id']!==$channelId)throw new Problem('product_download_channel_invalid');
+        $hostname='';
+        if($channel!==null){
+            $channel['id']=$channelId;
+            $hostname=$this->normalizeHost((string)parse_url($channel['download_url'],PHP_URL_HOST));
+            $hostQuery=$this->db->prepare('SELECT enabled FROM portal_product_download_hosts WHERE hostname=?');
+            $hostQuery->execute([$hostname]);
+            if(!(bool)$hostQuery->fetchColumn())throw new Problem('product_download_host_not_allowed',403);
+        }
+
+        return Database::transaction($this->db,function(PDO $db)use($adminId,$product,$channelId,$channel,$hostname,$context,$now,$remove):array{
+            $query=$db->prepare('SELECT c.*,r.status release_status FROM portal_product_download_channels c
+                JOIN portal_product_release_files f ON f.id=c.file_id
+                JOIN portal_product_releases r ON r.id=f.release_id
+                WHERE c.id=? AND r.product_code=? FOR UPDATE');
+            $query->execute([$channelId,$product]);$before=$query->fetch();
+            if(!$before)throw new Problem('product_download_channel_not_found',404);
+            if($before['release_status']!=='published')throw new Problem('product_release_immutable',409);
+            $snapshot=static fn(array $row):array=>[
+                'hostname'=>$row['hostname'],'channel_name'=>$row['channel_name'],'provider'=>$row['provider'],
+                'region_code'=>$row['region_code'],'sort_order'=>(int)$row['sort_order'],
+                'enabled'=>(bool)$row['enabled'],'passcode_configured'=>$row['passcode_ciphertext']!==null,
+            ];
+            if($remove){
+                if((bool)$before['enabled'])throw new Problem('product_download_channel_disable_first',409);
+                $available=$db->prepare('SELECT COUNT(*) FROM portal_product_download_channels c
+                    JOIN portal_product_download_hosts h ON h.hostname=c.hostname
+                    WHERE c.file_id=? AND c.id<>? AND c.enabled=1 AND h.enabled=1');
+                $available->execute([$before['file_id'],$channelId]);
+                if((int)$available->fetchColumn()<1)throw new Problem('product_release_channel_required',409);
+                $db->prepare('DELETE FROM portal_product_download_channels WHERE id=?')->execute([$channelId]);
+                (new Backoffice($db))->audit($adminId,'REMOVE_PRODUCT_DOWNLOAD_CHANNEL',$product,
+                    ['channel_id'=>$channelId,'before'=>$snapshot($before),'after'=>null],$context,$now);
+                return ['id'=>$channelId,'removed'=>true];
+            }
+
+            $hostLock=$db->prepare('SELECT enabled FROM portal_product_download_hosts WHERE hostname=? FOR UPDATE');
+            $hostLock->execute([$hostname]);
+            if(!(bool)$hostLock->fetchColumn())throw new Problem('product_download_host_not_allowed',403);
+            $passcode=$before['passcode_ciphertext'];
+            if($channel['passcode']!=='')$passcode=$this->secrets->encrypt($channel['passcode'],'product-download-channel:'.$channelId);
+            elseif($channel['clear_passcode'])$passcode=null;
+            $urlChanged=$before['download_url']!==$channel['download_url'];
+            $db->prepare('UPDATE portal_product_download_channels SET hostname=?,channel_name=?,provider=?,region_code=?,
+                download_url=?,passcode_ciphertext=?,sort_order=?,enabled=?,checked_at=?,check_status=?,check_error_code=?,updated_at=? WHERE id=?')
+                ->execute([$hostname,$channel['channel_name'],$channel['provider'],$channel['region_code'],$channel['download_url'],
+                    $passcode,$channel['sort_order'],(int)$channel['enabled'],$urlChanged?null:$before['checked_at'],
+                    $urlChanged?null:$before['check_status'],$urlChanged?null:$before['check_error_code'],$now,$channelId]);
+            $after=$snapshot(['hostname'=>$hostname,'channel_name'=>$channel['channel_name'],'provider'=>$channel['provider'],
+                'region_code'=>$channel['region_code'],'sort_order'=>$channel['sort_order'],'enabled'=>$channel['enabled'],
+                'passcode_ciphertext'=>$passcode]);
+            (new Backoffice($db))->audit($adminId,'UPDATE_PRODUCT_DOWNLOAD_CHANNEL',$product,
+                ['channel_id'=>$channelId,'before'=>$snapshot($before),'after'=>$after],$context,$now);
+            return ['id'=>$channelId,'saved'=>true,'enabled'=>$channel['enabled']];
+        });
+    }
+
     public function saveRelease(int $adminId,string $product,array $input,array $context,int $now): array
     {
         Permissions::require($this->db,$adminId,'products.manage');

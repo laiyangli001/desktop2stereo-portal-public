@@ -1,4 +1,8 @@
 {
+  "errors.product_download_channel_not_found": "Canal de téléchargement introuvable.",
+  "errors.product_download_channel_disable_first": "Désactivez le canal avant de le supprimer.",
+  "errors.product_release_channel_required": "Chaque fichier publié doit conserver au moins un canal disponible.",
+  "errors.product_release_immutable": "Cette version publiée ne peut pas être modifiée ici.",
   "user_detail.beta_memberships": "Participations à la bêta",
   "user_detail.beta_joined": "Date d’inscription",
   "user_detail.beta_ends": "Fin de la bêta",

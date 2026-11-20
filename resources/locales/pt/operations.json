@@ -1,4 +1,8 @@
 {
+  "errors.product_download_channel_not_found": "Canal de download não encontrado.",
+  "errors.product_download_channel_disable_first": "Desative o canal antes de removê-lo.",
+  "errors.product_release_channel_required": "Mantenha pelo menos um canal disponível para cada arquivo publicado.",
+  "errors.product_release_immutable": "Esta versão publicada não pode ser alterada aqui.",
   "user_detail.beta_memberships": "Participação na beta",
   "user_detail.beta_joined": "Data de adesão",
   "user_detail.beta_ends": "Fim da beta",

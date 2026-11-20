@@ -1,4 +1,8 @@
 {
+  "errors.product_download_channel_not_found": "Канал загрузки не найден.",
+  "errors.product_download_channel_disable_first": "Отключите канал перед удалением.",
+  "errors.product_release_channel_required": "Для каждого файла релиза должен оставаться хотя бы один доступный канал.",
+  "errors.product_release_immutable": "Этот опубликованный релиз нельзя изменить здесь.",
   "user_detail.beta_memberships": "Участие в бета-тестировании",
   "user_detail.beta_joined": "Дата участия",
   "user_detail.beta_ends": "Окончание бета-тестирования",

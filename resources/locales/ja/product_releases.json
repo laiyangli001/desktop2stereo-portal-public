@@ -1,4 +1,9 @@
 {
+  "edit_channel": "チャネルを編集",
+  "remove_channel": "チャネルを削除",
+  "remove_channel_confirm": "この無効なチャネルを削除しますか？",
+  "clear_passcode": "現在のパスコードを消去",
+  "passcode_blank_preserves": "空欄の場合、現在のパスコードを保持します。",
   "platform_versions": "対応プラットフォーム / 最新バージョン",
   "operating_mode": "運用モード",
   "beta_ends_at": "ベータ終了日時",

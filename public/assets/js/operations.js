@@ -123,6 +123,10 @@
     permission_denied: tr('operations.errors.permission_denied'),
     record_changed: tr('operations.errors.record_changed'),
     product_download_invalid: tr('content_admin.product.download_invalid'),
+    product_download_channel_not_found: tr('operations.errors.product_download_channel_not_found'),
+    product_download_channel_disable_first: tr('operations.errors.product_download_channel_disable_first'),
+    product_release_channel_required: tr('operations.errors.product_release_channel_required'),
+    product_release_immutable: tr('operations.errors.product_release_immutable'),
     client_session_changed: tr('licensing.logout.changed'),
     client_session_invalid: tr('licensing.logout.failed'),
     last_super_administrator: tr('operations.errors.last_super_administrator'),
@@ -905,6 +909,29 @@
     showDialog((product.presentation?.title || product.code) + ' · ' + prtr('heading'));
     const panel = node('section');
     detail.append(panel);
+    const editDownloadChannel = (release, file, channel) => {
+      showDialog((product.presentation?.title || product.code) + ' · ' + prtr('edit_channel'));
+      const form = makeForm(async item => {
+        const values = Object.fromEntries(new FormData(item));
+        values.enabled = item.elements.namedItem('enabled').checked;
+        values.clear_passcode = item.elements.namedItem('clear_passcode').checked;
+        values.sort_order = Number(values.sort_order);
+        await request('/products/' + encodeURIComponent(product.code) + '/channels/' + channel.id, values);
+        form.dataset.keepOpen = 'true';
+        await manageProductReleases(product);
+      });
+      field(form, 'channel_name', prtr('channel_name'), 'text', channel.channel_name, {required:true,maxLength:100});
+      field(form, 'provider', prtr('provider'), 'text', channel.provider, {maxLength:80});
+      field(form, 'region_code', prtr('region'), 'text', channel.region_code, {required:true,maxLength:16});
+      field(form, 'download_url', prtr('url'), 'url', channel.download_url, {required:true,maxLength:2048});
+      field(form, 'passcode', prtr('passcode'), 'password', '', {maxLength:256});
+      form.append(node('p', prtr('passcode_blank_preserves'), 'wide portal-help'));
+      const order=field(form, 'sort_order', prtr('sort_order'), 'number', channel.sort_order, {required:true});
+      order.min='0';order.max='100000';order.step='1';
+      field(form, 'enabled', prtr('enabled'), 'checkbox', channel.enabled);
+      field(form, 'clear_passcode', prtr('clear_passcode'), 'checkbox', false);
+      form.finish(); detail.append(form);
+    };
     const refresh = async () => {
       panel.replaceChildren();
       const data = await request('/products/' + encodeURIComponent(product.code) + '/releases');
@@ -989,7 +1016,22 @@
           const fileCard = node('div', null, 'operation-detail-grid');
           fileCard.append(node('p', file.architecture + ' · ' + file.file_format + ' · ' + file.file_name));
           fileCard.append(node('p', 'SHA-256: ' + file.sha256 + ' · ' + file.byte_size + ' B'));
-          for (const channel of file.channels || []) fileCard.append(node('p', channel.channel_name + ' · ' + channel.region_code + ' · ' + channel.download_url + (channel.enabled ? '' : ' · ' + prtr('disabled'))));
+          for (const channel of file.channels || []) {
+            const channelRow=node('div',null,'operation-panel-actions');
+            channelRow.append(node('p', channel.channel_name + ' · ' + channel.region_code + ' · ' + channel.download_url +
+              (channel.enabled ? '' : ' · ' + prtr('disabled'))));
+            if(release.status==='published') {
+              channelRow.append(button(prtr('edit_channel'),()=>editDownloadChannel(release,file,channel)));
+              if(!channel.enabled) channelRow.append(button(prtr('remove_channel'),async()=>{
+                if(!window.confirm(prtr('remove_channel_confirm')))return;
+                try {
+                  await request('/products/'+encodeURIComponent(product.code)+'/channels/'+channel.id+'/remove',{});
+                  await manageProductReleases(product);
+                } catch(error) { message(error,dialogMessage); }
+              }));
+            }
+            fileCard.append(channelRow);
+          }
           card.append(fileCard);
         }
         if (release.status === 'draft') {

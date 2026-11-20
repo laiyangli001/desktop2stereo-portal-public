@@ -1,4 +1,9 @@
 {
+  "edit_channel": "Изменить канал",
+  "remove_channel": "Удалить канал",
+  "remove_channel_confirm": "Удалить этот отключённый канал?",
+  "clear_passcode": "Очистить текущий код доступа",
+  "passcode_blank_preserves": "Оставьте поле пустым, чтобы сохранить текущий код.",
   "platform_versions": "Платформы / последние версии",
   "operating_mode": "Режим работы",
   "beta_ends_at": "Окончание бета-тестирования",

@@ -1,4 +1,8 @@
 {
+  "errors.product_download_channel_not_found": "Download channel not found.",
+  "errors.product_download_channel_disable_first": "Disable the channel before removing it.",
+  "errors.product_release_channel_required": "Keep at least one available channel for each release file.",
+  "errors.product_release_immutable": "This published release cannot be changed here.",
   "user_detail.beta_memberships": "Beta participation",
   "user_detail.beta_joined": "Joined",
   "user_detail.beta_ends": "Beta end time",

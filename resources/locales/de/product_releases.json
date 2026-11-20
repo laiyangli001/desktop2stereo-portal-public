@@ -1,4 +1,9 @@
 {
+  "edit_channel": "Kanal bearbeiten",
+  "remove_channel": "Kanal entfernen",
+  "remove_channel_confirm": "Diesen deaktivierten Kanal entfernen?",
+  "clear_passcode": "Aktuelles Kennwort löschen",
+  "passcode_blank_preserves": "Leer lassen, um das aktuelle Kennwort beizubehalten.",
   "platform_versions": "Plattformen / neueste Versionen",
   "operating_mode": "Betriebsmodus",
   "beta_ends_at": "Ende der Beta",

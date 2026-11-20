@@ -1,4 +1,9 @@
 {
+  "edit_channel": "Edit channel",
+  "remove_channel": "Remove channel",
+  "remove_channel_confirm": "Remove this disabled channel?",
+  "clear_passcode": "Clear current passcode",
+  "passcode_blank_preserves": "Leave blank to keep the current passcode.",
   "platform_versions": "Platforms / latest versions",
   "operating_mode": "Operating mode",
   "beta_ends_at": "Beta end time",

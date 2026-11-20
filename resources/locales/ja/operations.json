@@ -1,4 +1,8 @@
 {
+  "errors.product_download_channel_not_found": "ダウンロードチャネルが見つかりません。",
+  "errors.product_download_channel_disable_first": "削除する前にチャネルを無効にしてください。",
+  "errors.product_release_channel_required": "各リリースファイルに少なくとも1つの利用可能なチャネルを残してください。",
+  "errors.product_release_immutable": "公開済みリリースはここでは変更できません。",
   "user_detail.beta_memberships": "ベータ参加履歴",
   "user_detail.beta_joined": "参加日時",
   "user_detail.beta_ends": "ベータ終了日時",

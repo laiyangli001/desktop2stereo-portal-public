@@ -1,4 +1,9 @@
 {
+  "edit_channel": "Sửa kênh tải",
+  "remove_channel": "Xóa kênh",
+  "remove_channel_confirm": "Xóa kênh đã tắt này?",
+  "clear_passcode": "Xóa mã truy cập hiện tại",
+  "passcode_blank_preserves": "Để trống để giữ mã hiện tại.",
   "platform_versions": "Nền tảng / phiên bản mới nhất",
   "operating_mode": "Chế độ vận hành",
   "beta_ends_at": "Thời gian kết thúc beta",

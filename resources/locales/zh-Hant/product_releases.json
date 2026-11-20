@@ -1,4 +1,9 @@
 {
+  "edit_channel": "編輯渠道",
+  "remove_channel": "移除渠道",
+  "remove_channel_confirm": "確定移除此已停用渠道嗎？",
+  "clear_passcode": "清除目前的提取碼",
+  "passcode_blank_preserves": "密碼欄留空會保留現有提取碼。",
   "platform_versions": "支援平台 / 最新版本",
   "operating_mode": "營運模式",
   "beta_ends_at": "公測截止時間",

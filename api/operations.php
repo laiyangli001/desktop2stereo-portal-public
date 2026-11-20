@@ -44,6 +44,10 @@ if($productImageWrite){
     $data=$releaseActionRoute[3]==='publish'
         ?$manager->publish($adminId,$releaseActionRoute[1],$releaseActionRoute[2],$context,$now)
         :$manager->withdraw($adminId,$releaseActionRoute[1],$releaseActionRoute[2],$context,$now);
+}elseif($method==='POST'&&preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/channels/([a-f0-9]{32})(?:/(remove))?$#D',$route,$downloadChannelRoute)){
+    $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
+    $data=$manager->updateDownloadChannel($adminId,$downloadChannelRoute[1],$downloadChannelRoute[2],$input,$context,$now,
+        ($downloadChannelRoute[3]??'')==='remove');
 }elseif($route==='/download-hosts'){
     $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
     if($write){HttpRequest::strings($input,['hostname']);$data=$manager->allowDownloadHost($adminId,$input['hostname'],$context,$now);}

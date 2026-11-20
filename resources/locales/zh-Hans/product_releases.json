@@ -1,4 +1,9 @@
 {
+  "edit_channel": "编辑渠道",
+  "remove_channel": "移除渠道",
+  "remove_channel_confirm": "确定移除这条已停用渠道吗？",
+  "clear_passcode": "清除当前提取码",
+  "passcode_blank_preserves": "密码框留空会保留现有提取码。",
   "platform_versions": "支持平台 / 最新版本",
   "operating_mode": "运营模式",
   "beta_ends_at": "公测截止时间",

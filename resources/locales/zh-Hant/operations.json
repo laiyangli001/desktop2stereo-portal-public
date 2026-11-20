@@ -1,4 +1,8 @@
 {
+  "errors.product_download_channel_not_found": "找不到下載渠道。",
+  "errors.product_download_channel_disable_first": "請先停用下載渠道，再移除。",
+  "errors.product_release_channel_required": "每個發佈檔案至少要保留一個可用下載渠道。",
+  "errors.product_release_immutable": "已發佈版本無法修改此項。",
   "user_detail.beta_memberships": "公測參與記錄",
   "user_detail.beta_joined": "加入時間",
   "user_detail.beta_ends": "公測截止時間",
