@@ -1,4 +1,12 @@
 {
+  "platform_versions": "Plattformen / neueste Versionen",
+  "operating_mode": "Betriebsmodus",
+  "beta_ends_at": "Ende der Beta",
+  "mode_beta": "In der Beta",
+  "mode_scheduled": "Geplant",
+  "mode_free": "Kostenlos",
+  "mode_paid": "Kostenpflichtig",
+  "mode_not_configured": "Nicht konfiguriert",
   "heading": "Versionen und Downloads",
   "manage": "Versionen",
   "allowed_hosts": "Zugelassene Download-Hosts",

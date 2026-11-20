@@ -1,4 +1,12 @@
 {
+  "platform_versions": "Платформы / последние версии",
+  "operating_mode": "Режим работы",
+  "beta_ends_at": "Окончание бета-тестирования",
+  "mode_beta": "Бета-тестирование",
+  "mode_scheduled": "Запланировано",
+  "mode_free": "Бесплатно",
+  "mode_paid": "Платно",
+  "mode_not_configured": "Не настроено",
   "heading": "Версии и загрузки",
   "manage": "Версии",
   "allowed_hosts": "Разрешённые домены загрузки",

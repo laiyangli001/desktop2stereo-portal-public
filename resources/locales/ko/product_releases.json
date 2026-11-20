@@ -1,4 +1,12 @@
 {
+  "platform_versions": "지원 플랫폼 / 최신 버전",
+  "operating_mode": "운영 모드",
+  "beta_ends_at": "베타 종료 시각",
+  "mode_beta": "베타 진행 중",
+  "mode_scheduled": "예정됨",
+  "mode_free": "무료",
+  "mode_paid": "유료",
+  "mode_not_configured": "설정되지 않음",
   "heading": "릴리스 및 다운로드",
   "manage": "릴리스",
   "allowed_hosts": "허용된 다운로드 호스트",

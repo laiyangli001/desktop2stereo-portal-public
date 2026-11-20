@@ -879,6 +879,13 @@
     results.append(table([
       [tr('operations.render_product.product_name'), item => stack(item.presentation?.title || item.draft?.title || item.code, item.code)],
       [tr('operations.edit_user.status'), item => badge(tr('operations.status.' + item.state), item.state !== 'published')],
+      [prtr('platform_versions'), item => {
+        const platforms = (item.platform_versions || []).map(entry => entry.platform);
+        const latest = (item.platform_versions || []).filter(entry => entry.latest_version_code !== null).map(entry => entry.platform + ' v' + entry.latest_version_code);
+        return stack(platforms.join(' · ') || '—', latest.join(' · '));
+      }],
+      [prtr('operating_mode'), item => prtr('mode_' + item.operating_mode)],
+      [prtr('beta_ends_at'), item => date(item.beta_ends_at)],
       [tr('operations.page_help.prices_and_purchasing'), item => {
         const prices = item.prices.filter(price => price.enabled).map(price => money(price.amount, price.currency));
         const availability = tr(item.purchases_enabled ? 'commerce.settings.on' : 'commerce.settings.off');

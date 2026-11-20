@@ -1,4 +1,12 @@
 {
+  "platform_versions": "支援平台 / 最新版本",
+  "operating_mode": "營運模式",
+  "beta_ends_at": "公測截止時間",
+  "mode_beta": "公測中",
+  "mode_scheduled": "尚未開始",
+  "mode_free": "永久免費",
+  "mode_paid": "收費營運",
+  "mode_not_configured": "未設定",
   "heading": "版本與下載",
   "manage": "版本與下載",
   "allowed_hosts": "下載網域白名單",

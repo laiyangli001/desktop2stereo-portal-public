@@ -1,4 +1,12 @@
 {
+  "platform_versions": "対応プラットフォーム / 最新バージョン",
+  "operating_mode": "運用モード",
+  "beta_ends_at": "ベータ終了日時",
+  "mode_beta": "ベータ中",
+  "mode_scheduled": "予定",
+  "mode_free": "無料",
+  "mode_paid": "有料",
+  "mode_not_configured": "未設定",
   "heading": "リリースとダウンロード",
   "manage": "リリース",
   "allowed_hosts": "許可されたダウンロードホスト",

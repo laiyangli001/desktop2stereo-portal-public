@@ -50,6 +50,10 @@ final readonly class ProductCatalog
         $translations=new ProductTranslations($this->db);
         $priceQuery=$this->db->prepare('SELECT currency,amount,revision,enabled FROM portal_product_prices
             WHERE product_code=?'.($admin?'':' AND enabled=1').' ORDER BY currency');
+        $releaseQuery=$admin?$this->db->prepare("SELECT platform,MAX(CASE WHEN status='published' THEN version_code ELSE NULL END) latest_version_code
+            FROM portal_product_releases WHERE product_code=? GROUP BY platform ORDER BY platform"):null;
+        $operationsQuery=$admin?$this->db->prepare('SELECT beta_starts_at,beta_ends_at,post_beta_mode FROM portal_product_operations WHERE product_code=?'):null;
+        $now=time();
         $items=[];
         foreach($rows as$row){
             $content=$translations->publicContent($row['code'],$locale);
@@ -59,6 +63,22 @@ final readonly class ProductCatalog
                 'currency'=>$price['currency'],'amount'=>(int)$price['amount'],
                 'revision'=>(int)$price['revision'],'enabled'=>(bool)$price['enabled'],
             ],$priceQuery->fetchAll());
+            $platformVersions=[];$operatingMode='not_configured';$betaStartsAt=null;$betaEndsAt=null;
+            if($admin){
+                $releaseQuery->execute([$row['code']]);$platformVersions=$releaseQuery->fetchAll();
+                foreach($platformVersions as &$platformVersion){
+                    $platformVersion['latest_version_code']=$platformVersion['latest_version_code']===null?null:(int)$platformVersion['latest_version_code'];
+                }
+                unset($platformVersion);
+                $operationsQuery->execute([$row['code']]);$operations=$operationsQuery->fetch();
+                if($operations){
+                    $betaStartsAt=$operations['beta_starts_at']===null?null:(int)$operations['beta_starts_at'];
+                    $betaEndsAt=$operations['beta_ends_at']===null?null:(int)$operations['beta_ends_at'];
+                    $postBetaMode=$operations['post_beta_mode'];
+                    $operatingMode=$betaEndsAt!==null&&$betaEndsAt<=$now?$postBetaMode:
+                        ($betaStartsAt!==null&&$betaStartsAt>$now?'scheduled':(($betaStartsAt!==null||$betaEndsAt!==null)?'beta':'not_configured'));
+                }
+            }
             $draft=$admin&&$row['draft_json']!==null
                 ? json_decode($row['draft_json'],true,16,JSON_THROW_ON_ERROR) : null;
             $items[]=[
@@ -73,6 +93,8 @@ final readonly class ProductCatalog
                     'draft'=>$draft??$translations->get($adminId,$row['code'],$row['source_locale']),
                     'published'=>self::hasPublishedContent($this->db,$row['code']),
                     'publication_locales'=>(new ContentPublicationLanguages($this->db))->selected('product',$row['code'])??[$row['source_locale'],'en'],
+                    'platform_versions'=>$platformVersions,'operating_mode'=>$operatingMode,
+                    'beta_starts_at'=>$betaStartsAt,'beta_ends_at'=>$betaEndsAt,
                 ]:[]),
             ];
         }

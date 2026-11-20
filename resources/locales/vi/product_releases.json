@@ -1,4 +1,12 @@
 {
+  "platform_versions": "Nền tảng / phiên bản mới nhất",
+  "operating_mode": "Chế độ vận hành",
+  "beta_ends_at": "Thời gian kết thúc beta",
+  "mode_beta": "Đang beta",
+  "mode_scheduled": "Đã lên lịch",
+  "mode_free": "Miễn phí",
+  "mode_paid": "Trả phí",
+  "mode_not_configured": "Chưa cấu hình",
   "heading": "Releases and downloads",
   "manage": "Releases",
   "allowed_hosts": "Allowed download hosts",

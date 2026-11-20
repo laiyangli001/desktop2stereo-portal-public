@@ -1,4 +1,12 @@
 {
+  "platform_versions": "支持平台 / 最新版本",
+  "operating_mode": "运营模式",
+  "beta_ends_at": "公测截止时间",
+  "mode_beta": "公测中",
+  "mode_scheduled": "尚未开始",
+  "mode_free": "永久免费",
+  "mode_paid": "收费运营",
+  "mode_not_configured": "未设置",
   "heading": "版本与下载",
   "manage": "版本与下载",
   "allowed_hosts": "下载域名白名单",
