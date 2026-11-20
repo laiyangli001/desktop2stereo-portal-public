@@ -10,7 +10,7 @@ use PDO;
 
 final readonly class ClientLicensing
 {
-    public function __construct(private PDO $db, private LicenseCredentials $credentials)
+    public function __construct(private PDO $db, private LicenseCredentials $credentials, private ?SecretBox $secrets = null)
     {
     }
 
@@ -84,6 +84,94 @@ final readonly class ClientLicensing
                 'user_id'=>$id,'license'=>$this->view($license)];
         });
         return self::result($result);
+    }
+
+    public function bootstrap(string $token,string $deviceHash,string $expectedProduct,string $platform,string $architecture,int $now): array
+    {
+        self::device($deviceHash);
+        $expectedProduct=ProductCatalog::code($expectedProduct);
+        self::assertUpdateTarget($platform,$architecture);
+        return Database::transaction($this->db,function(PDO $db)use($token,$deviceHash,$expectedProduct,$platform,$architecture,$now):array{
+            [$user,$session,$license]=$this->session($token,$deviceHash,$now);
+            if($session['product']!==$expectedProduct)throw new Problem('client_product_mismatch',403);
+            $release=$db->prepare("SELECT r.version_code,r.version_name,r.release_notes,r.published_at
+                FROM portal_product_releases r
+                WHERE r.product_code=? AND r.platform=? AND r.status='published'
+                    AND EXISTS(SELECT 1 FROM portal_product_release_files f WHERE f.release_id=r.id AND f.architecture=?)
+                ORDER BY r.version_code DESC LIMIT 1");
+            $release->execute([$expectedProduct,$platform,$architecture]);
+            $latest=$release->fetch()?:null;
+            if($latest!==null){
+                $latest['version_code']=(int)$latest['version_code'];
+                $latest['published_at']=$latest['published_at']===null?null:(int)$latest['published_at'];
+            }
+            $policy=$db->prepare('SELECT minimum_supported_version FROM portal_product_update_policies WHERE product_code=? AND platform=?');
+            $policy->execute([$expectedProduct,$platform]);
+            $minimum=$policy->fetchColumn();
+            return ['product_code'=>$expectedProduct,'platform'=>$platform,'architecture'=>$architecture,
+                'license'=>$this->view($license),'update'=>['latest'=>$latest,
+                    'minimum_supported_version'=>$minimum===false?0:(int)$minimum]];
+        });
+    }
+
+    public function updateDownloads(string $token,string $deviceHash,string $expectedProduct,string $platform,string $architecture,
+        int $versionCode,?string $region,int $now): array
+    {
+        self::device($deviceHash);
+        $expectedProduct=ProductCatalog::code($expectedProduct);
+        self::assertUpdateTarget($platform,$architecture);
+        if($versionCode<1)throw new Problem('product_release_version_invalid');
+        if($region!==null&&!preg_match('/^(?:[A-Z]{2}(?:-[A-Z0-9]{1,3})?|\*)$/D',$region))throw new Problem('product_download_region_invalid');
+        return Database::transaction($this->db,function(PDO $db)use($token,$deviceHash,$expectedProduct,$platform,$architecture,$versionCode,$region,$now):array{
+            [$user,$session,$license]=$this->session($token,$deviceHash,$now);
+            if($session['product']!==$expectedProduct)throw new Problem('client_product_mismatch',403);
+            $release=$db->prepare("SELECT id,version_code,version_name FROM portal_product_releases
+                WHERE product_code=? AND platform=? AND version_code=? AND status='published' FOR UPDATE");
+            $release->execute([$expectedProduct,$platform,$versionCode]);
+            $row=$release->fetch();
+            if($row===false)throw new Problem('release_changed',409);
+            $minimumQuery=$db->prepare('SELECT minimum_supported_version FROM portal_product_update_policies WHERE product_code=? AND platform=?');
+            $minimumQuery->execute([$expectedProduct,$platform]);
+            $minimum=(int)($minimumQuery->fetchColumn()?:0);
+            if($minimum>0&&$versionCode<$minimum)throw new Problem('product_update_below_minimum',409);
+            $files=$db->prepare('SELECT id,architecture,file_format,file_name,byte_size,sha256,android_package_name,android_signing_sha256
+                FROM portal_product_release_files WHERE release_id=? AND architecture=? ORDER BY file_format');
+            $files->execute([$row['id'],$architecture]);
+            $items=$files->fetchAll();
+            if($items===[])throw new Problem('release_changed',409);
+            $channels=$db->prepare("SELECT c.id,c.channel_name,c.provider,c.region_code,c.download_url,c.passcode_ciphertext,
+                    c.sort_order
+                FROM portal_product_download_channels c JOIN portal_product_download_hosts h
+                    ON h.hostname=c.hostname AND h.enabled=1
+                WHERE c.file_id=? AND c.enabled=1 AND (? IS NULL OR c.region_code IN (?, '*'))
+                ORDER BY CASE WHEN c.region_code=? THEN 0 ELSE 1 END,c.sort_order,c.id");
+            foreach($items as &$file){
+                $file['byte_size']=(int)$file['byte_size'];
+                $channels->execute([$file['id'],$region,$region,$region]);
+                $file['channels']=[];
+                foreach($channels->fetchAll() as $channel){
+                    $passcode=null;
+                    if($channel['passcode_ciphertext']!==null){
+                        if($this->secrets===null)throw new Problem('secret_configuration_unavailable',503);
+                        $passcode=$this->secrets->decrypt($channel['passcode_ciphertext'],'product-download-channel:'.$channel['id']);
+                    }
+                    $file['channels'][]=['channel_name'=>$channel['channel_name'],'provider'=>$channel['provider'],
+                        'region_code'=>$channel['region_code'],'download_url'=>$channel['download_url'],
+                        'passcode'=>$passcode,'sort_order'=>(int)$channel['sort_order']];
+                }
+                unset($file['id']);
+            }
+            unset($file);
+            foreach($items as $file)if($file['channels']===[])throw new Problem('product_download_channel_unavailable',503);
+            return ['product_code'=>$expectedProduct,'platform'=>$platform,'version_code'=>(int)$row['version_code'],
+                'version_name'=>$row['version_name'],'files'=>$items,'license'=>$this->view($license)];
+        });
+    }
+
+    private static function assertUpdateTarget(string $platform,string $architecture): void
+    {
+        if(!in_array($platform,['windows','macos','linux','android'],true)||
+            !preg_match('/^[a-zA-Z0-9_-]{1,32}$/D',$architecture))throw new Problem('client_platform_invalid');
     }
 
     public function heartbeat(string $token, string $deviceHash, int $now): array

@@ -10,16 +10,21 @@ use D2S\services\HttpRequest;
 use D2S\services\LicenseCredentials;
 use D2S\services\LicenseOverview;
 use D2S\services\LicenseSigner;
+use D2S\services\SecretBox;
 use D2S\services\WebSessions;
 use D2S\services\SigningKeys;
 
 $method = $_SERVER['REQUEST_METHOD'];
+$clientBootstrapRoute=preg_match('#^/api/v1/products/([a-z][a-z0-9_-]{2,31})/bootstrap$#D',$path,$bootstrapMatch)===1;
+$clientDownloadsRoute=preg_match('#^/api/v1/products/([a-z][a-z0-9_-]{2,31})/update-downloads$#D',$path,$downloadsMatch)===1;
+if($clientBootstrapRoute||$clientDownloadsRoute)header('Cache-Control: no-store, private, max-age=0');
 $methods = ['/api/v2/license/keys'=>'GET','/api/v2/me/license'=>'GET','/api/v2/me/license/devices'=>'GET','/api/v2/me/license/session/logout'=>'POST',
     '/api/v2/client/login'=>'POST','/api/v2/client/heartbeat'=>'POST','/api/v2/client/logout'=>'POST',
     '/api/v2/admin/license-keys'=>'GET','/api/v2/admin/license-keys/activate'=>'POST',
     '/api/v2/admin/license-keys/retire'=>'POST'];
-if (!isset($methods[$path])) { throw new Problem('not_found',404); }
-if ($methods[$path] !== $method) { throw new Problem('method_not_allowed',405); }
+if (!isset($methods[$path])&&!$clientBootstrapRoute&&!$clientDownloadsRoute) { throw new Problem('not_found',404); }
+$expectedMethod=$clientBootstrapRoute||$clientDownloadsRoute?'POST':$methods[$path];
+if ($expectedMethod !== $method) { throw new Problem('method_not_allowed',405); }
 if (str_starts_with($path,'/api/v2/admin/license-keys')) {
     $db = Database::fromEnvironment();
     $owner = HttpRequest::session('admin',new WebSessions($db),$method !== 'GET',time());
@@ -47,7 +52,29 @@ if (str_starts_with($path,'/api/v2/admin/license-keys')) {
     };
     $clientService = static fn(string $product): ClientLicensing => new ClientLicensing($db,
         new LicenseCredentials(LicenseSigner::fromEnvironment(),CoreKeyWrapper::fromEnvironment($product),$product));
-    if ($method === 'GET' && $path === '/api/v2/me/license') {
+    if ($clientBootstrapRoute || $clientDownloadsRoute) {
+        $raw=HttpRequest::json();
+        $input=HttpRequest::strings($raw,['device_hash','platform','architecture']);
+        if (!preg_match('/^Bearer ([a-f0-9]{64})$/D',$_SERVER['HTTP_AUTHORIZATION'] ?? '',$matches)) {
+            throw new Problem('client_session_invalid',401);
+        }
+        header('Cache-Control: no-store, private, max-age=0');
+        $product=$productInput($clientBootstrapRoute?$bootstrapMatch[1]:$downloadsMatch[1]);
+        $service=$clientService($product);
+        if($clientBootstrapRoute){
+            $data=$service->bootstrap($matches[1],$input['device_hash'],$product,$input['platform'],$input['architecture'],$now);
+        }else{
+            $versionCode=$raw['version_code']??null;
+            if(!is_int($versionCode))throw new Problem('product_release_version_invalid');
+            $region=$raw['region_code']??null;
+            if($region!==null&&!is_string($region))throw new Problem('product_download_region_invalid');
+            $downloadService=new ClientLicensing($db,
+                new LicenseCredentials(LicenseSigner::fromEnvironment(),CoreKeyWrapper::fromEnvironment($product),$product),
+                SecretBox::fromEnvironment());
+            $data=$downloadService->updateDownloads($matches[1],$input['device_hash'],$product,$input['platform'],$input['architecture'],
+                $versionCode,$region===null?null:strtoupper($region),$now);
+        }
+    } elseif ($method === 'GET' && $path === '/api/v2/me/license') {
         $owner = HttpRequest::session('user',new WebSessions($db),false,$now);
         $overview = new LicenseOverview($db);
         $data = ['license'=>$overview->license($owner['id'],$productInput($_GET['product'] ?? 'desktop2stereo')),
