@@ -1,4 +1,8 @@
 {
+  "filters.client_activity": "クライアントの利用状況",
+  "filters.recent_client_login": "過去30日以内にログイン",
+  "filters.inactive_30_days": "30日以上ログインなし",
+  "filters.no_client_record": "クライアント記録なし",
   "user_detail.client_activity": "クライアントの利用状況",
   "user_detail.product": "製品",
   "user_detail.platform": "プラットフォーム",

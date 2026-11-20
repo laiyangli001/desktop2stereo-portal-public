@@ -1,4 +1,8 @@
 {
+  "filters.client_activity": "Client-Aktivität",
+  "filters.recent_client_login": "Anmeldung innerhalb von 30 Tagen",
+  "filters.inactive_30_days": "Seit über 30 Tagen keine Anmeldung",
+  "filters.no_client_record": "Keine Client-Daten",
   "user_detail.client_activity": "Client-Aktivität",
   "user_detail.product": "Produkt",
   "user_detail.platform": "Plattform",

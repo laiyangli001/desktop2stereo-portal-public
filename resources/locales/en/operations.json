@@ -1,4 +1,8 @@
 {
+  "filters.client_activity": "Client activity",
+  "filters.recent_client_login": "Signed in within 30 days",
+  "filters.inactive_30_days": "No sign-in for over 30 days",
+  "filters.no_client_record": "No client record",
   "user_detail.client_activity": "Client activity",
   "user_detail.product": "Product",
   "user_detail.platform": "Platform",

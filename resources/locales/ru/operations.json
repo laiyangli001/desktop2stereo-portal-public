@@ -1,4 +1,8 @@
 {
+  "filters.client_activity": "Активность клиента",
+  "filters.recent_client_login": "Вход за последние 30 дней",
+  "filters.inactive_30_days": "Нет входа более 30 дней",
+  "filters.no_client_record": "Нет данных клиента",
   "user_detail.client_activity": "Активность клиента",
   "user_detail.product": "Продукт",
   "user_detail.platform": "Платформа",

@@ -1,4 +1,8 @@
 {
+  "filters.client_activity": "用戶端活躍度",
+  "filters.recent_client_login": "最近 30 天登入",
+  "filters.inactive_30_days": "超過 30 天未登入",
+  "filters.no_client_record": "暫無用戶端記錄",
   "user_detail.client_activity": "用戶端活躍度",
   "user_detail.product": "商品",
   "user_detail.platform": "平台",

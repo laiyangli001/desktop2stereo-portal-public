@@ -1,4 +1,8 @@
 {
+  "filters.client_activity": "클라이언트 활동",
+  "filters.recent_client_login": "최근 30일 내 로그인",
+  "filters.inactive_30_days": "30일 넘게 로그인하지 않음",
+  "filters.no_client_record": "클라이언트 기록 없음",
   "user_detail.client_activity": "클라이언트 활동",
   "user_detail.product": "제품",
   "user_detail.platform": "플랫폼",

@@ -1,4 +1,8 @@
 {
+  "filters.client_activity": "Actividad del cliente",
+  "filters.recent_client_login": "Inicio de sesión en los últimos 30 días",
+  "filters.inactive_30_days": "Sin inicio de sesión durante más de 30 días",
+  "filters.no_client_record": "Sin registros del cliente",
   "user_detail.client_activity": "Actividad del cliente",
   "user_detail.product": "Producto",
   "user_detail.platform": "Plataforma",

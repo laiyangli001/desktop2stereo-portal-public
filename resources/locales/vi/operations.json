@@ -1,4 +1,8 @@
 {
+  "filters.client_activity": "Hoạt động ứng dụng",
+  "filters.recent_client_login": "Đăng nhập trong 30 ngày gần đây",
+  "filters.inactive_30_days": "Không đăng nhập hơn 30 ngày",
+  "filters.no_client_record": "Chưa có dữ liệu ứng dụng",
   "user_detail.client_activity": "Hoạt động ứng dụng",
   "user_detail.product": "Sản phẩm",
   "user_detail.platform": "Nền tảng",

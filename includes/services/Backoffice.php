@@ -83,7 +83,8 @@ final readonly class Backoffice
     public function users(int $adminId, array $filters): array
     {
         Permissions::require($this->db,$adminId,'users.read');
-        [$where,$args]=$this->userFilter($filters);
+        $now=time();
+        [$where,$args]=$this->userFilter($filters,$now);
         $from=" FROM portal_users u LEFT JOIN portal_contacts e ON e.user_id=u.id AND e.kind='email'
             LEFT JOIN portal_contacts p ON p.user_id=u.id AND p.kind='phone'
             LEFT JOIN portal_licenses l ON l.user_id=u.id AND l.product='desktop2stereo'
@@ -103,7 +104,7 @@ final readonly class Backoffice
                 AND o.status IN ('paid','refund_pending','partially_refunded','refunded')) payment_currencies,
             (SELECT r.register_ip FROM portal_registration_records r WHERE r.user_id=u.id ORDER BY r.id LIMIT 1) register_ip,
             COALESCE(c.login_blocked,0) login_blocked".$from.$where." ORDER BY u.id DESC LIMIT 50 OFFSET ".$offset);
-        $q->execute(array_merge([time()],$args)); $items=$q->fetchAll();
+        $q->execute(array_merge([$now],$args)); $items=$q->fetchAll();
         $geoip=new IpCountry();$overview=new LicenseOverview($this->db);
         $locale=function_exists('d2s_locale_code')?d2s_locale_code():'en';
         foreach ($items as &$row) {
@@ -431,7 +432,7 @@ final readonly class Backoffice
         Audit::admin($this->db,$adminId,$email,$operation,$target,$context,'SUCCESS',$details,$now);
     }
 
-    private function userFilter(array $filters): array
+    private function userFilter(array $filters,int $now): array
     {
         $where=[];$args=[];
         if(($filters['q']??'')!==''){$term='%'.self::text($filters,'q',100,true).'%';$where[]='(u.username LIKE ? OR u.display_name LIKE ? OR e.value LIKE ? OR p.value LIKE ?)';array_push($args,$term,$term,$term,$term);}
@@ -444,6 +445,34 @@ final readonly class Backoffice
             $licenseFilter[]='owned.kind=?';$args[]=$kind;
         }
         if($licenseFilter!==[])$where[]='EXISTS(SELECT 1 FROM portal_licenses owned WHERE owned.user_id=u.id AND '.implode(' AND ',$licenseFilter).')';
+        $activityWhere=[];
+        if(($filters['product']??'')!==''){$activityWhere[]='activity.product_code=?';$args[]=ProductCatalog::code(self::text($filters,'product',32,true));}
+        if(($filters['platform']??'')!==''){
+            $platform=self::text($filters,'platform',16,true);
+            if(!in_array($platform,['windows','macos','linux','android','unknown'],true))throw new Problem('client_platform_invalid');
+            $activityWhere[]='activity.platform=?';$args[]=$platform;
+        }
+        if(($filters['version']??'')!==''){
+            $version='%'.self::text($filters,'version',64,true).'%';
+            $activityWhere[]='(activity.version_name LIKE ? OR CAST(activity.version_code AS CHAR) LIKE ?)';
+            array_push($args,$version,$version);
+        }
+        if(($filters['activity']??'')!==''){
+            $activityStatus=self::text($filters,'activity',16,true);
+            if(!in_array($activityStatus,['recent','inactive','none'],true))throw new Problem('client_activity_filter_invalid');
+            $activityClause=$activityWhere===[]?'':' AND '.implode(' AND ',$activityWhere);
+            if($activityStatus==='none'){
+                $where[]='NOT EXISTS(SELECT 1 FROM portal_product_user_activity activity WHERE activity.user_id=u.id'.$activityClause.')';
+            }else{
+                $cutoff=$now-30*86400;
+                $timeCondition=$activityStatus==='recent'?'activity.last_client_login_at>=?':'activity.last_client_login_at<?';
+                $where[]='EXISTS(SELECT 1 FROM portal_product_user_activity activity WHERE activity.user_id=u.id'.$activityClause.
+                    ' AND activity.last_client_login_at IS NOT NULL AND '.$timeCondition.')';
+                $args[]=$cutoff;
+            }
+        }elseif($activityWhere!==[]){
+            $where[]='EXISTS(SELECT 1 FROM portal_product_user_activity activity WHERE activity.user_id=u.id AND '.implode(' AND ',$activityWhere).')';
+        }
         if(($filters['currency']??'')!==''){
             $where[]="EXISTS (SELECT 1 FROM portal_orders o WHERE o.user_id=u.id AND o.currency=? AND o.paid_at IS NOT NULL
                 AND o.status IN ('paid','refund_pending','partially_refunded','refunded'))";

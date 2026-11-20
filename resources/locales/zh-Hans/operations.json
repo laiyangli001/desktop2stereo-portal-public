@@ -1,4 +1,8 @@
 {
+  "filters.client_activity": "客户端活跃度",
+  "filters.recent_client_login": "最近 30 天登录",
+  "filters.inactive_30_days": "超过 30 天未登录",
+  "filters.no_client_record": "暂无客户端记录",
   "user_detail.client_activity": "客户端活跃度",
   "user_detail.product": "商品",
   "user_detail.platform": "平台",
