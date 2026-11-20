@@ -20,8 +20,9 @@ $owner=HttpRequest::session('admin',new WebSessions($db),$write,time());
 $largeArticleWrite=is_string($path)&&preg_match('#^/api/v2/admin/operations/articles(?:/|$)#D',$path)===1;
 $largeCatalogImport=is_string($path)&&preg_match('#^/api/v2/admin/operations/ui-catalog/import$#D',$path)===1;
 $productImageWrite=$method==='POST'&&preg_match('#^/api/v2/admin/operations/products/([a-z][a-z0-9_-]{2,31})/image$#D',$path,$productImageRoute)===1;
+$largeReleaseWrite=is_string($path)&&preg_match('#^/api/v2/admin/operations/products/[a-z][a-z0-9_-]{2,31}/releases$#D',$path)===1;
 if($productImageWrite)HttpRequest::assertOrigin();
-$input=$write&&!$productImageWrite?HttpRequest::json(true,$largeArticleWrite?524288:($largeCatalogImport?2097152:32768)):[];
+$input=$write&&!$productImageWrite?HttpRequest::json(true,$largeArticleWrite?524288:($largeCatalogImport?2097152:($largeReleaseWrite?524288:32768))):[];
 $service=new Backoffice($db);
 $adminId=(int)$owner['id'];
 $context=Audit::context($_SERVER);
@@ -35,6 +36,24 @@ if($productImageWrite){
     if($expected===false)throw new Problem('record_changed',409);
     $data=(new D2S\services\ProductImages($db,D2S\services\ProductImages::directory()))
         ->upload($adminId,$productImageRoute[1],$_FILES['image']??[],(int)$expected,$context,$now,true);
+}elseif(preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/releases$#D',$route,$productReleaseRoute)){
+    $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
+    $data=$write?$manager->saveRelease($adminId,$productReleaseRoute[1],$input,$context,$now):$manager->releases($adminId,$productReleaseRoute[1]);
+}elseif($method==='POST'&&preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/releases/([a-f0-9]{32})/(publish|withdraw)$#D',$route,$releaseActionRoute)){
+    $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
+    $data=$releaseActionRoute[3]==='publish'
+        ?$manager->publish($adminId,$releaseActionRoute[1],$releaseActionRoute[2],$context,$now)
+        :$manager->withdraw($adminId,$releaseActionRoute[1],$releaseActionRoute[2],$context,$now);
+}elseif($route==='/download-hosts'){
+    $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
+    if($write){HttpRequest::strings($input,['hostname']);$data=$manager->allowDownloadHost($adminId,$input['hostname'],$context,$now);}
+    else $data=$manager->downloadHosts($adminId);
+}elseif($method==='POST'&&preg_match('#^/download-hosts/([^/]+)/disable$#D',$route,$disableDownloadHostRoute)){
+    $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
+    $data=$manager->disableDownloadHost($adminId,rawurldecode($disableDownloadHostRoute[1]),$context,$now);
+}elseif(preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/update-policy$#D',$route,$updatePolicyRoute)&&$write){
+    $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
+    $data=$manager->savePolicy($adminId,$updatePolicyRoute[1],$input,$context,$now);
 }elseif($write&&preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/delete$#D',$route,$deleteProductRoute)){
     $data=(new D2S\services\ProductCatalog($db))->deleteAllLanguages($adminId,$deleteProductRoute[1],$context,$now);
 }elseif($route==='/products'&&in_array($method,['GET','POST'],true)){
