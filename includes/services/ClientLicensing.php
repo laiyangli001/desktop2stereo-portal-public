@@ -14,13 +14,14 @@ final readonly class ClientLicensing
     {
     }
 
-    public function login(string $identifier, string $password, string $deviceHash, string $publicKey, array $context, int $now, string $product = 'desktop2stereo'): array
+    public function login(string $identifier, string $password, string $deviceHash, string $publicKey, array $context, int $now, string $product = 'desktop2stereo', string $platform = 'unknown', string $deviceType = 'unknown'): array
     {
         ProductCatalog::code($product);
         self::device($deviceHash);
+        self::assertClientProfileTarget($platform,$deviceType);
         CoreKeyWrapper::deviceKey($publicKey);
         $context['device_fingerprint'] = $deviceHash;
-        $result = Database::transaction($this->db,function (PDO $db) use ($identifier,$password,$deviceHash,$publicKey,$context,$now,$product): array {
+        $result = Database::transaction($this->db,function (PDO $db) use ($identifier,$password,$deviceHash,$publicKey,$context,$now,$product,$platform,$deviceType): array {
             $ipAllowed = RateLimiter::take($db,'login:ip:user:' . ($context['source_ip'] ?? 'unknown'),30,600,$now);
             $user = $this->findUser($identifier);
             $id = $user === null ? null : (int)$user['id'];
@@ -78,20 +79,65 @@ final readonly class ClientLicensing
             $db->prepare('UPDATE portal_licenses SET session_version=?,updated_at=? WHERE id=?')
                 ->execute([$version,$now,$license['id']]);
             $this->record($id,$license,$deviceHash,$bundle,$now);
+            $this->touchClientLogin($db,$id,$product,$platform,$now);
+            $clientState=$this->clientState($db,$id,$product,$platform,$deviceType);
             RateLimiter::clear($db,$bucket);
             Audit::user($db,$id,$email,'LOGIN','SUCCESS',$context,$now);
             return $bundle + ['access_token'=>$token,'token_type'=>'Bearer','session_version'=>$version,
-                'user_id'=>$id,'license'=>$this->view($license)];
+                'user_id'=>$id,'license'=>$this->view($license),'client_state'=>$clientState];
         });
         return self::result($result);
     }
 
-    public function bootstrap(string $token,string $deviceHash,string $expectedProduct,string $platform,string $architecture,int $now): array
+    private static function assertClientProfileTarget(string $platform,string $deviceType): void
+    {
+        if(!in_array($platform,['windows','macos','linux','android','unknown'],true)||
+            !in_array($deviceType,['desktop','headset','phone','tablet','unknown'],true)){
+            throw new Problem('client_platform_invalid');
+        }
+    }
+
+    private function touchClientLogin(PDO $db,int $userId,string $product,string $platform,int $now): void
+    {
+        $db->prepare('INSERT INTO portal_product_user_activity
+            (user_id,product_code,platform,last_client_login_at,revision,updated_at)
+            VALUES(?,?,?,?,1,?) ON DUPLICATE KEY UPDATE
+                last_client_login_at=VALUES(last_client_login_at),updated_at=VALUES(updated_at)')
+            ->execute([$userId,$product,$platform,$now,$now]);
+    }
+
+    private function clientState(PDO $db,int $userId,string $product,string $platform,string $deviceType): array
+    {
+        $activity=$db->prepare('SELECT last_client_login_at,last_version_reported_at,version_code,version_name,architecture,revision
+            FROM portal_product_user_activity WHERE user_id=? AND product_code=? AND platform=?');
+        $activity->execute([$userId,$product,$platform]);
+        $version=$activity->fetch()?:[
+            'last_client_login_at'=>null,'last_version_reported_at'=>null,'version_code'=>null,
+            'version_name'=>null,'architecture'=>null,'revision'=>1,
+        ];
+        foreach(['last_client_login_at','last_version_reported_at','version_code','revision'] as $key){
+            $version[$key]=$version[$key]===null?null:(int)$version[$key];
+        }
+        $environmentQuery=$db->prepare('SELECT os_name,os_version,os_build,gpu_model,android_api_level,device_model,reported_at,revision
+            FROM portal_product_user_environment WHERE user_id=? AND product_code=? AND platform=? AND device_type=?');
+        $environmentQuery->execute([$userId,$product,$platform,$deviceType]);
+        $environment=$environmentQuery->fetch()?:[
+            'os_name'=>null,'os_version'=>null,'os_build'=>null,'gpu_model'=>null,
+            'android_api_level'=>null,'device_model'=>null,'reported_at'=>null,'revision'=>1,
+        ];
+        foreach(['android_api_level','reported_at','revision'] as $key){
+            $environment[$key]=$environment[$key]===null?null:(int)$environment[$key];
+        }
+        return ['version'=>$version,'environment'=>$environment];
+    }
+
+    public function bootstrap(string $token,string $deviceHash,string $expectedProduct,string $platform,string $architecture,int $now,string $deviceType='unknown'): array
     {
         self::device($deviceHash);
         $expectedProduct=ProductCatalog::code($expectedProduct);
         self::assertUpdateTarget($platform,$architecture);
-        return Database::transaction($this->db,function(PDO $db)use($token,$deviceHash,$expectedProduct,$platform,$architecture,$now):array{
+        self::assertClientProfileTarget($platform,$deviceType);
+        return Database::transaction($this->db,function(PDO $db)use($token,$deviceHash,$expectedProduct,$platform,$architecture,$now,$deviceType):array{
             [$user,$session,$license]=$this->session($token,$deviceHash,$now);
             if($session['product']!==$expectedProduct)throw new Problem('client_product_mismatch',403);
             $release=$db->prepare("SELECT r.version_code,r.version_name,r.release_notes,r.published_at
@@ -108,9 +154,108 @@ final readonly class ClientLicensing
             $policy=$db->prepare('SELECT minimum_supported_version FROM portal_product_update_policies WHERE product_code=? AND platform=?');
             $policy->execute([$expectedProduct,$platform]);
             $minimum=$policy->fetchColumn();
+            $clientState=$this->clientState($db,(int)$user['id'],$expectedProduct,$platform,$deviceType);
             return ['product_code'=>$expectedProduct,'platform'=>$platform,'architecture'=>$architecture,
-                'license'=>$this->view($license),'update'=>['latest'=>$latest,
+                'license'=>$this->view($license),'client_state'=>$clientState,'update'=>['latest'=>$latest,
                     'minimum_supported_version'=>$minimum===false?0:(int)$minimum]];
+        });
+    }
+
+    public function syncEnvironment(string $token,string $deviceHash,string $platform,string $deviceType,array $input,int $now): array
+    {
+        self::device($deviceHash);
+        self::assertClientProfileTarget($platform,$deviceType);
+        $version=$input['version']??null;
+        $environment=$input['environment']??null;
+        if($version!==null){
+            if(!is_array($version)||!is_int($version['revision']??null)||$version['revision']<1||
+                !is_int($version['version_code']??null)||$version['version_code']<1||$version['version_code']>2147483647||
+                !is_string($version['version_name']??null)||!is_string($version['architecture']??null)||
+                !preg_match('/^[a-zA-Z0-9_-]{1,32}$/D',$version['architecture'])){
+                throw new Problem('client_version_report_invalid');
+            }
+            $versionName=trim($version['version_name']);
+            if($versionName===''||!mb_check_encoding($versionName,'UTF-8')||mb_strlen($versionName,'UTF-8')>64||
+                preg_match('/[\x00-\x1F\x7F]/',$versionName))throw new Problem('client_version_report_invalid');
+            $version=['revision'=>$version['revision'],'version_code'=>$version['version_code'],
+                'version_name'=>$versionName,'architecture'=>$version['architecture']];
+        }
+        $environmentFields=['os_name'=>64,'os_version'=>64,'os_build'=>64,'gpu_model'=>160,'device_model'=>160];
+        if($environment!==null){
+            if(!is_array($environment)||!is_int($environment['revision']??null)||$environment['revision']<1){
+                throw new Problem('client_environment_report_invalid');
+            }
+            $normalized=['revision'=>$environment['revision']];
+            foreach($environment as $key=>$value){
+                if($key==='revision')continue;
+                if($key==='android_api_level'){
+                    if($value!==null&&(!is_int($value)||$value<1||$value>65535))throw new Problem('client_environment_report_invalid');
+                    $normalized[$key]=$value;
+                    continue;
+                }
+                if(!array_key_exists($key,$environmentFields)||($value!==null&&!is_string($value)))throw new Problem('client_environment_report_invalid');
+                if($value===null){$normalized[$key]=null;continue;}
+                $value=trim($value);
+                if($value===''||!mb_check_encoding($value,'UTF-8')||mb_strlen($value,'UTF-8')>$environmentFields[$key]||
+                    preg_match('/[\x00-\x1F\x7F]/',$value))throw new Problem('client_environment_report_invalid');
+                $normalized[$key]=$value;
+            }
+            if(count($normalized)===1)throw new Problem('client_environment_report_invalid');
+            $environment=$normalized;
+        }
+        if($version===null&&$environment===null)throw new Problem('client_environment_report_invalid');
+
+        return Database::transaction($this->db,function(PDO $db)use($token,$deviceHash,$platform,$deviceType,$version,$environment,$now):array{
+            [$user,$session]=$this->session($token,$deviceHash,$now);
+            $userId=(int)$user['id'];$product=(string)$session['product'];$conflicts=[];
+            if($version!==null){
+                $query=$db->prepare('SELECT last_client_login_at,version_code,version_name,architecture,revision
+                    FROM portal_product_user_activity WHERE user_id=? AND product_code=? AND platform=? FOR UPDATE');
+                $query->execute([$userId,$product,$platform]);$current=$query->fetch();
+                $actual=$current===false?1:(int)$current['revision'];
+                if($version['revision']!==$actual){
+                    $conflicts[]='version';
+                }else{
+                    $same=$current!==false&&(int)$current['version_code']===$version['version_code']&&
+                        $current['version_name']===$version['version_name']&&$current['architecture']===$version['architecture'];
+                    if(!$same){
+                        $next=$actual+1;
+                        $db->prepare('INSERT INTO portal_product_user_activity
+                            (user_id,product_code,platform,last_version_reported_at,version_code,version_name,architecture,revision,updated_at)
+                            VALUES(?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE
+                                last_version_reported_at=VALUES(last_version_reported_at),version_code=VALUES(version_code),
+                                version_name=VALUES(version_name),architecture=VALUES(architecture),revision=VALUES(revision),updated_at=VALUES(updated_at)')
+                            ->execute([$userId,$product,$platform,$now,$version['version_code'],$version['version_name'],$version['architecture'],$next,$now]);
+                    }
+                }
+            }
+            if($environment!==null){
+                $query=$db->prepare('SELECT os_name,os_version,os_build,gpu_model,android_api_level,device_model,revision
+                    FROM portal_product_user_environment WHERE user_id=? AND product_code=? AND platform=? AND device_type=? FOR UPDATE');
+                $query->execute([$userId,$product,$platform,$deviceType]);$current=$query->fetch();
+                $actual=$current===false?1:(int)$current['revision'];
+                if($environment['revision']!==$actual){
+                    $conflicts[]='environment';
+                }else{
+                    $columns=['os_name','os_version','os_build','gpu_model','android_api_level','device_model'];
+                    $values=[];
+                    foreach($columns as $column)$values[$column]=$environment[$column]??($current[$column]??null);
+                    $same=$current!==false;
+                    foreach($columns as $column)if(($current[$column]??null)!==$values[$column])$same=false;
+                    if(!$same){
+                        $next=$actual+1;
+                        $db->prepare('INSERT INTO portal_product_user_environment
+                            (user_id,product_code,platform,device_type,os_name,os_version,os_build,gpu_model,android_api_level,device_model,reported_at,revision)
+                            VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE os_name=VALUES(os_name),
+                                os_version=VALUES(os_version),os_build=VALUES(os_build),gpu_model=VALUES(gpu_model),
+                                android_api_level=VALUES(android_api_level),device_model=VALUES(device_model),
+                                reported_at=VALUES(reported_at),revision=VALUES(revision)')
+                            ->execute([$userId,$product,$platform,$deviceType,$values['os_name'],$values['os_version'],$values['os_build'],
+                                $values['gpu_model'],$values['android_api_level'],$values['device_model'],$now,$next]);
+                    }
+                }
+            }
+            return ['conflicts'=>$conflicts,'client_state'=>$this->clientState($db,$userId,$product,$platform,$deviceType)];
         });
     }
 

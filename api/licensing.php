@@ -17,10 +17,11 @@ use D2S\services\SigningKeys;
 $method = $_SERVER['REQUEST_METHOD'];
 $clientBootstrapRoute=preg_match('#^/api/v1/products/([a-z][a-z0-9_-]{2,31})/bootstrap$#D',$path,$bootstrapMatch)===1;
 $clientDownloadsRoute=preg_match('#^/api/v1/products/([a-z][a-z0-9_-]{2,31})/update-downloads$#D',$path,$downloadsMatch)===1;
-if($clientBootstrapRoute||$clientDownloadsRoute)header('Cache-Control: no-store, private, max-age=0');
+$clientEnvironmentRoute=$path==='/api/v2/client/environment';
+if($clientBootstrapRoute||$clientDownloadsRoute||$clientEnvironmentRoute)header('Cache-Control: no-store, private, max-age=0');
 $methods = ['/api/v2/license/keys'=>'GET','/api/v2/me/license'=>'GET','/api/v2/me/license/devices'=>'GET','/api/v2/me/license/session/logout'=>'POST',
     '/api/v2/client/login'=>'POST','/api/v2/client/heartbeat'=>'POST','/api/v2/client/logout'=>'POST',
-    '/api/v2/admin/license-keys'=>'GET','/api/v2/admin/license-keys/activate'=>'POST',
+    '/api/v2/client/environment'=>'POST','/api/v2/admin/license-keys'=>'GET','/api/v2/admin/license-keys/activate'=>'POST',
     '/api/v2/admin/license-keys/retire'=>'POST'];
 if (!isset($methods[$path])&&!$clientBootstrapRoute&&!$clientDownloadsRoute) { throw new Problem('not_found',404); }
 $expectedMethod=$clientBootstrapRoute||$clientDownloadsRoute?'POST':$methods[$path];
@@ -55,6 +56,8 @@ if (str_starts_with($path,'/api/v2/admin/license-keys')) {
     if ($clientBootstrapRoute || $clientDownloadsRoute) {
         $raw=HttpRequest::json();
         $input=HttpRequest::strings($raw,['device_hash','platform','architecture']);
+        $deviceType=$raw['device_type']??'unknown';
+        if(!is_string($deviceType))throw new Problem('client_platform_invalid');
         if (!preg_match('/^Bearer ([a-f0-9]{64})$/D',$_SERVER['HTTP_AUTHORIZATION'] ?? '',$matches)) {
             throw new Problem('client_session_invalid',401);
         }
@@ -62,7 +65,7 @@ if (str_starts_with($path,'/api/v2/admin/license-keys')) {
         $product=$productInput($clientBootstrapRoute?$bootstrapMatch[1]:$downloadsMatch[1]);
         $service=$clientService($product);
         if($clientBootstrapRoute){
-            $data=$service->bootstrap($matches[1],$input['device_hash'],$product,$input['platform'],$input['architecture'],$now);
+            $data=$service->bootstrap($matches[1],$input['device_hash'],$product,$input['platform'],$input['architecture'],$now,$deviceType);
         }else{
             $versionCode=$raw['version_code']??null;
             if(!is_int($versionCode))throw new Problem('product_release_version_invalid');
@@ -91,10 +94,26 @@ if (str_starts_with($path,'/api/v2/admin/license-keys')) {
         (new LicenseOverview($db))->logout($owner['id'],$input['device_hash'],$input['session_version'],Audit::context($_SERVER),$now,$productInput($input['product'] ?? 'desktop2stereo'));
         $data = ['logged_out'=>true];
     } elseif ($method === 'POST' && $path === '/api/v2/client/login') {
-        $input = HttpRequest::strings(HttpRequest::json(),['identifier','password','device_hash','device_public_key']);
+        $raw=HttpRequest::json();
+        $input = HttpRequest::strings($raw,['identifier','password','device_hash','device_public_key']);
         $product = $productInput($input['product'] ?? 'desktop2stereo');
+        $platform=$raw['platform']??'unknown';$deviceType=$raw['device_type']??'unknown';
+        if(!is_string($platform)||!is_string($deviceType))throw new Problem('client_platform_invalid');
         $service = $clientService($product);
-        $data = $service->login($input['identifier'],$input['password'],$input['device_hash'],$input['device_public_key'],Audit::context($_SERVER),$now,$product);
+        $data = $service->login($input['identifier'],$input['password'],$input['device_hash'],$input['device_public_key'],
+            Audit::context($_SERVER),$now,$product,$platform,$deviceType);
+    } elseif ($method === 'POST' && $path === '/api/v2/client/environment') {
+        $raw=HttpRequest::json(true);
+        $input=HttpRequest::strings($raw,['device_hash','platform','device_type']);
+        if (!preg_match('/^Bearer ([a-f0-9]{64})$/D',$_SERVER['HTTP_AUTHORIZATION'] ?? '',$matches)) {
+            throw new Problem('client_session_invalid',401);
+        }
+        $query=$db->prepare('SELECT product FROM portal_client_sessions WHERE token_hash=?');
+        $query->execute([hash('sha256',$matches[1])]);
+        $product=$query->fetchColumn();
+        if($product===false)throw new Problem('client_session_replaced',401);
+        $data=$clientService($product)->syncEnvironment($matches[1],$input['device_hash'],$input['platform'],
+            $input['device_type'],$raw,$now);
     } elseif ($method === 'POST' && in_array($path,['/api/v2/client/heartbeat','/api/v2/client/logout'],true)) {
         $input = HttpRequest::strings(HttpRequest::json(),['device_hash']);
         if (!preg_match('/^Bearer ([a-f0-9]{64})$/D',$_SERVER['HTTP_AUTHORIZATION'] ?? '',$matches)) {
