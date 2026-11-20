@@ -55,6 +55,24 @@
 
 在 `/admin/users` 的多软件详情展示各平台最后登录时间、最后上报版本和上报时间。列表支持按软件、平台、版本和最近登录时间过滤。默认把该商品最近 30 天没有客户端登录的用户归为「近期未登录」，从未有记录的另列为「暂无客户端记录」。同一商品跨平台查看时，取各平台最后登录时间的最大值。这里衡量的是客户端登录活跃度，离线使用和长期未重新登录的用户无法由此准确识别。
 
+### 5.1 平台与设备信息
+
+设备信息随客户端登录一同上报，使用可选的 `device_info` 对象。新增 `portal_product_user_environment` 表，以 `(user_id, product_code, platform, device_type)` 为唯一键，复用请求已有的 `platform` 和 `architecture`。每种设备类型保留最近一次有效上报，Android 手机与 Android 头显分别保存。数据库另存服务器生成的 `reported_at`（UTC）。
+
+| 字段 | 适用范围 | 举例 |
+| --- | --- | --- |
+| `device_type` | 设备类别 | `desktop`、`headset`、`phone`、`tablet`、`unknown` |
+| `os_name` | 系统名称 | Windows 10、Windows 11、Ubuntu、macOS、Android |
+| `os_version` | 系统版本或发布号 | 22H2、24H2、24.04、15.1、14 |
+| `os_build` | 可选的系统构建号 | Windows 构建号 `26100.1742` |
+| `gpu_model` | 电脑端可选，优先记录软件实际选用的 GPU | NVIDIA GeForce RTX 4060 |
+| `android_api_level` | Android 设备可选，整数 | `34` |
+| `device_model` | 头显型号，也可用于 Android 手机或平板 | Meta Quest 3 |
+
+后台把系统名称和版本组合显示，例如「Windows 11 24H2」。保留已有的软件版本列，另显示系统、显卡或头显型号，以及设备信息的最后上报时间。支持按商品、平台、系统版本、显卡和头显型号筛选。Android 头显显示 Android 版本和型号。无法确认 Windows 的发布号时可只上报构建号，Linux 可上报发行版及其版本。
+
+客户端仅在读取到对应值时填写。字段为空、无法识别或旧客户端未上报时，按缺省处理，成功登录流程照常。类型、长度和枚举由服务端校验。设备信息仅用于兼容性与运营统计，不作为鉴权依据，也不收集设备序列号、MAC 地址或广告标识。验收覆盖 Windows 10、Windows 11、Linux、macOS 和 Android 头显，并检查 Android 手机与头显的记录不会互相覆盖。
+
 ## 6. 开发顺序与验收
 
 1. **后台和数据**：同一商品可同时配置电脑和 Android，录入不同文件哈希。为同一文件添加三条及以上渠道，验证可独立排序、停用和替换。旧商品、订单和正式授权正常读取。
