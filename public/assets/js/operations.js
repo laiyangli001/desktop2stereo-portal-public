@@ -1134,9 +1134,15 @@
       const versionName = field(form, 'version_name', prtr('version_name'), 'text', release.version_name || '', {required:true,maxLength:64});
       const notes = field(form, 'release_notes', prtr('notes'), 'textarea', release.release_notes || '', {wide:true,maxLength:16000,rows:4});
       const filesWrap = node('section', null, 'wide'); filesWrap.append(node('h3', prtr('files'))); form.append(filesWrap);
+      const manifestLabel = node('label', prtr('import_manifest'));
+      const manifestInput = node('input'); manifestInput.type = 'file'; manifestInput.accept = 'application/json,.json';
+      manifestLabel.append(manifestInput); filesWrap.append(manifestLabel);
+      filesWrap.append(node('p', prtr('manifest_format_help'), 'portal-help'));
+      const manifestStatus = node('p', null, 'portal-help');
+      const fileRows = node('div'); filesWrap.append(fileRows);
       const addFile = (initial = {}) => {
-        const section = node('section', null, 'admin-panel'); filesWrap.append(section);
-        const f = {id:initial.id,channels:[]};
+        const section = node('section', null, 'admin-panel'); fileRows.append(section);
+        const f = {id:initial.id,channels:[],section};
         const input = (label,type,value,required=false) => { const wrap=node('label',label); const control=type==='textarea'?node('textarea'):node('input'); if(type!=='textarea')control.type=type; control.value=value??''; control.required=required; wrap.append(control); section.append(wrap); return control; };
         f.architecture=input(prtr('architecture'),'text',initial.architecture||'x64',true);
         f.format=input(prtr('format'),'text',initial.file_format||'exe',true);
@@ -1158,7 +1164,53 @@
         section.append(button(prtr('remove_file'),()=>{section.remove();const i=files.indexOf(f);if(i>=0)files.splice(i,1);}));files.push(f);
       };
       for(const file of release.files||[])addFile(file);
-      filesWrap.append(button(prtr('add_file'),()=>addFile()));
+      filesWrap.append(button(prtr('add_file'),()=>addFile()),manifestStatus);
+      manifestInput.addEventListener('change', async () => {
+        const selected = manifestInput.files?.[0];
+        if (!selected) return;
+        try {
+          if (selected.size > 1048576) throw new Error('manifest_invalid');
+          const manifest = JSON.parse(await selected.text());
+          const supportedPlatforms = ['windows','macos','linux','android'];
+          const importedFiles = manifest.files;
+          if (!supportedPlatforms.includes(manifest.platform) || !Number.isInteger(manifest.version_code) ||
+              manifest.version_code < 1 || manifest.version_code > 2147483647 ||
+              typeof manifest.version_name !== 'string' || !manifest.version_name.trim() ||
+              !Array.isArray(importedFiles) || importedFiles.length < 1 ||
+              importedFiles.some(file => !file || typeof file.architecture !== 'string' || !file.architecture.trim() ||
+                typeof file.file_format !== 'string' || !file.file_format.trim() ||
+                typeof file.file_name !== 'string' || !file.file_name.trim() ||
+                !Number.isSafeInteger(Number(file.byte_size)) || Number(file.byte_size) < 1 ||
+                typeof file.sha256 !== 'string' || !/^[A-Fa-f0-9]{64}$/.test(file.sha256))) {
+            throw new Error('manifest_invalid');
+          }
+          const identities = importedFiles.map(file => file.architecture + '\u0000' + file.file_format);
+          if (new Set(identities).size !== identities.length) throw new Error('manifest_invalid');
+          const previous = new Map(files.map(file =>
+            [file.architecture.value + '\u0000' + file.format.value, file]));
+          const normalizedFiles = importedFiles.map(file => {
+            const prior = previous.get(file.architecture + '\u0000' + file.file_format);
+            return {...file, id:prior?.id, byte_size:Number(file.byte_size), sha256:file.sha256.toLowerCase(),
+              channels:prior ? prior.channels.map(channel => ({
+                id:channel.id,channel_name:channel.name.value,provider:channel.provider.value,
+                region_code:channel.region.value,download_url:channel.url.value,sort_order:Number(channel.order.value),
+                enabled:channel.enabled.checked,
+              })) : []};
+          });
+          platform.value = manifest.platform;
+          versionCode.value = String(manifest.version_code);
+          versionName.value = manifest.version_name.trim();
+          notes.value = typeof manifest.release_notes === 'string' ? manifest.release_notes : '';
+          for (const file of [...files]) file.section.remove();
+          files.splice(0, files.length);
+          for (const file of normalizedFiles) addFile(file);
+          manifestStatus.textContent = prtr('manifest_imported');
+        } catch {
+          manifestStatus.textContent = prtr('manifest_invalid');
+        } finally {
+          manifestInput.value = '';
+        }
+      });
       form.finish(); form.querySelector('footer button').textContent=prtr('save_draft');
       detail.append(form);
     };
