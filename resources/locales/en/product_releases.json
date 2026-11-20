@@ -1,4 +1,6 @@
 {
+  "history": "Change history",
+  "history_empty": "No change history yet.",
   "edit_channel": "Edit channel",
   "remove_channel": "Remove channel",
   "remove_channel_confirm": "Remove this disabled channel?",

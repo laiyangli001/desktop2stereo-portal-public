@@ -934,6 +934,21 @@
     };
     const refresh = async () => {
       panel.replaceChildren();
+      const historyPanel=node('details',null,'admin-panel');
+      historyPanel.append(node('summary',prtr('history')));
+      const historyItems=node('div');
+      const historyData=await request('/products/'+encodeURIComponent(product.code)+'/release-history');
+      if(!(historyData.items||[]).length) historyItems.append(node('p',prtr('history_empty')));
+      for(const entry of historyData.items||[]){
+        const item=node('article',null,'admin-panel');
+        const time=new Intl.DateTimeFormat(document.documentElement.lang||undefined,{dateStyle:'medium',timeStyle:'short'})
+          .format(new Date(entry.operation_time*1000));
+        item.append(node('p',time+' · '+entry.operator_email+' · '+entry.operation_type+' · '+entry.result));
+        const details=node('pre',JSON.stringify(entry.details,null,2),'portal-help');
+        item.append(details);
+        historyItems.append(item);
+      }
+      historyPanel.append(historyItems);panel.append(historyPanel);
       const data = await request('/products/' + encodeURIComponent(product.code) + '/releases');
       const hosts = node('section', null, 'admin-panel');
       hosts.append(node('h3', prtr('allowed_hosts')));

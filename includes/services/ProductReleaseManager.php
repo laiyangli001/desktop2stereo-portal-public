@@ -71,6 +71,31 @@ final readonly class ProductReleaseManager
         return ['items'=>$items,'policies'=>$policyList,'download_hosts'=>$this->downloadHosts($adminId)['items']];
     }
 
+    public function releaseHistory(int $adminId,string $product): array
+    {
+        Permissions::require($this->db,$adminId,'products.manage');
+        $product=ProductCatalog::code($product);
+        $this->assertProduct($this->db,$product);
+        $query=$this->db->prepare('SELECT operator_email,operation_type,operation_time,result,details_json
+            FROM portal_admin_audit WHERE target_resource=? AND operation_type IN (
+                \'CREATE_PRODUCT_RELEASE\',\'UPDATE_PRODUCT_RELEASE\',\'PUBLISH_PRODUCT_RELEASE\',\'WITHDRAW_PRODUCT_RELEASE\',
+                \'UPDATE_PRODUCT_DOWNLOAD_CHANNEL\',\'REMOVE_PRODUCT_DOWNLOAD_CHANNEL\',\'UPDATE_PRODUCT_UPDATE_POLICY\',\'UPDATE_PRODUCT_OPERATIONS\'
+            ) ORDER BY id DESC LIMIT 100');
+        $query->execute([$product]);
+        $items=[];
+        foreach($query->fetchAll() as $row){
+            $details=json_decode((string)$row['details_json'],true);
+            $items[]=[
+                'operator_email'=>(string)$row['operator_email'],
+                'operation_type'=>(string)$row['operation_type'],
+                'operation_time'=>(int)$row['operation_time'],
+                'result'=>(string)$row['result'],
+                'details'=>is_array($details)?$details:[],
+            ];
+        }
+        return ['items'=>$items];
+    }
+
     public function updateDownloadChannel(int $adminId,string $product,string $channelId,array $input,array $context,int $now,bool $remove=false): array
     {
         Permissions::require($this->db,$adminId,'products.manage');

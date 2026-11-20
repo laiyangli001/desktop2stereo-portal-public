@@ -1,4 +1,6 @@
 {
+  "history": "發布記錄",
+  "history_empty": "暫無發布記錄。",
   "edit_channel": "編輯渠道",
   "remove_channel": "移除渠道",
   "remove_channel_confirm": "確定移除此已停用渠道嗎？",

@@ -1,4 +1,6 @@
 {
+  "history": "Historial de cambios",
+  "history_empty": "Todavía no hay cambios.",
   "edit_channel": "Editar canal",
   "remove_channel": "Eliminar canal",
   "remove_channel_confirm": "¿Eliminar este canal desactivado?",

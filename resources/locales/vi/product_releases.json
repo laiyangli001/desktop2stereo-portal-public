@@ -1,4 +1,6 @@
 {
+  "history": "Lịch sử thay đổi",
+  "history_empty": "Chưa có lịch sử thay đổi.",
   "edit_channel": "Sửa kênh tải",
   "remove_channel": "Xóa kênh",
   "remove_channel_confirm": "Xóa kênh đã tắt này?",

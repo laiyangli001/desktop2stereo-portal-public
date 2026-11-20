@@ -1,4 +1,6 @@
 {
+  "history": "发布记录",
+  "history_empty": "暂无发布记录。",
   "edit_channel": "编辑渠道",
   "remove_channel": "移除渠道",
   "remove_channel_confirm": "确定移除这条已停用渠道吗？",

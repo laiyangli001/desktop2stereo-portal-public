@@ -1,4 +1,6 @@
 {
+  "history": "変更履歴",
+  "history_empty": "変更履歴はありません。",
   "edit_channel": "チャネルを編集",
   "remove_channel": "チャネルを削除",
   "remove_channel_confirm": "この無効なチャネルを削除しますか？",

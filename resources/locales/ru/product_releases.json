@@ -1,4 +1,6 @@
 {
+  "history": "История изменений",
+  "history_empty": "История изменений пока пуста.",
   "edit_channel": "Изменить канал",
   "remove_channel": "Удалить канал",
   "remove_channel_confirm": "Удалить этот отключённый канал?",

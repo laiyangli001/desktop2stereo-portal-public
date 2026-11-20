@@ -1,4 +1,6 @@
 {
+  "history": "변경 기록",
+  "history_empty": "변경 기록이 없습니다.",
   "edit_channel": "채널 편집",
   "remove_channel": "채널 삭제",
   "remove_channel_confirm": "비활성화된 이 채널을 삭제할까요?",
