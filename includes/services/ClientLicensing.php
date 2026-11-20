@@ -46,16 +46,10 @@ final readonly class ClientLicensing
             }
             $select = $db->prepare('SELECT * FROM portal_licenses WHERE user_id=? AND product=? FOR UPDATE');
             $select->execute([$id,$product]);
-            $license = $select->fetch();
-            if ($license === false) {
-                $productQuery = $db->prepare('SELECT code FROM portal_products WHERE code=? AND enabled=1 AND deleted_at IS NULL');
-                $productQuery->execute([$product]);
-                if ($productQuery->fetchColumn() === false) { throw new Problem('product_not_found',404); }
-                $license = ['id'=>bin2hex(random_bytes(16)),'user_id'=>$id,'product'=>$product,'kind'=>'trial','status'=>'active',
-                    'trial_started_at'=>$now,'expires_at'=>$now+30*86400,'session_version'=>0];
-                $db->prepare('INSERT INTO portal_licenses
-                    (id,user_id,product,kind,status,trial_started_at,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)')
-                    ->execute([$license['id'],$id,$product,'trial','active',$now,$license['expires_at'],$now,$now]);
+            $license = $this->resolveProductLicense($db,$id,$product,$select->fetch()?:null,$now);
+            if($license===null){
+                Audit::user($db,$id,$email,'LOGIN','BLOCKED',$context,$now);
+                return ['error'=>'license_unavailable','status'=>403];
             }
             $unavailable = $this->licenseError($license,$now);
             if ($unavailable !== null) {
@@ -87,6 +81,85 @@ final readonly class ClientLicensing
                 'user_id'=>$id,'license'=>$this->view($license),'client_state'=>$clientState];
         });
         return self::result($result);
+    }
+
+    private function resolveProductLicense(PDO $db,int $userId,string $product,?array $license,int $now,bool $lockOperations=true): ?array
+    {
+        $query=$db->prepare('SELECT beta_starts_at,beta_ends_at,post_beta_mode,trial_enabled,trial_days,revision
+            FROM portal_product_operations WHERE product_code=?'.($lockOperations?' FOR UPDATE':''));
+        $query->execute([$product]);$rawOperations=$query->fetch();
+        $configured=$rawOperations!==false;
+        $operations=$rawOperations?:[
+            'beta_starts_at'=>null,'beta_ends_at'=>null,'post_beta_mode'=>'paid','trial_enabled'=>0,'trial_days'=>30,'revision'=>1,
+        ];
+        $betaStart=$operations['beta_starts_at']===null?null:(int)$operations['beta_starts_at'];
+        $betaEnd=$operations['beta_ends_at']===null?null:(int)$operations['beta_ends_at'];
+        $revision=(int)$operations['revision'];
+        $member=null;
+        if($configured&&$betaStart!==null&&$betaEnd!==null&&$now>=$betaStart&&$now<$betaEnd){
+            $db->prepare('INSERT IGNORE INTO portal_product_beta_members
+                (user_id,product_code,beta_revision,enrolled_at,beta_ends_at,trial_enabled_snapshot,trial_days_snapshot,post_beta_mode_snapshot)
+                VALUES(?,?,?,?,?,?,?,?)')->execute([$userId,$product,$revision,$now,$betaEnd,(int)$operations['trial_enabled'],
+                    (int)$operations['trial_days'],$operations['post_beta_mode']]);
+        }
+        if($configured){
+            $memberQuery=$db->prepare('SELECT beta_revision,enrolled_at,beta_ends_at,trial_enabled_snapshot,
+                trial_days_snapshot,post_beta_mode_snapshot FROM portal_product_beta_members
+                WHERE user_id=? AND product_code=? AND beta_revision=?');
+            $memberQuery->execute([$userId,$product,$revision]);$member=$memberQuery->fetch()?:null;
+        }
+
+        if($license!==null&&$license['status']==='active'&&$member!==null&&$betaStart!==null&&$betaEnd!==null&&$now>=$betaEnd&&
+            $license['kind']==='trial'&&(int)$license['trial_started_at']>=$betaStart&&
+            (int)$license['trial_started_at']<$betaEnd&&(int)$license['expires_at']<=$betaEnd){
+            $mode=$member['post_beta_mode_snapshot'];
+            $trialEnabled=(bool)$member['trial_enabled_snapshot'];
+            $trialEnd=$betaEnd+(int)$member['trial_days_snapshot']*86400;
+            if($mode==='free'){
+                $db->prepare("UPDATE portal_licenses SET kind='formal',trial_started_at=?,expires_at=NULL,updated_at=? WHERE id=? AND status='active'")
+                    ->execute([$betaEnd,$now,$license['id']]);
+                $license['kind']='formal';$license['trial_started_at']=$betaEnd;$license['expires_at']=null;
+            }elseif($trialEnabled&&$trialEnd>$now){
+                $db->prepare("UPDATE portal_licenses SET trial_started_at=?,expires_at=?,updated_at=? WHERE id=? AND status='active'")
+                    ->execute([$betaEnd,$trialEnd,$now,$license['id']]);
+                $license['trial_started_at']=$betaEnd;$license['expires_at']=$trialEnd;
+            }
+        }elseif($license!==null&&$license['status']==='active'&&$betaStart!==null&&$betaEnd!==null&&$now>=$betaStart&&$now<$betaEnd&&
+            $license['kind']==='trial'&&(int)$license['expires_at']<=$now){
+            $db->prepare("UPDATE portal_licenses SET trial_started_at=?,expires_at=?,updated_at=? WHERE id=? AND status='active'")
+                ->execute([$now,$betaEnd,$now,$license['id']]);
+            $license['trial_started_at']=$now;$license['expires_at']=$betaEnd;
+        }
+
+        if($license!==null)return $license;
+        $kind=null;$trialStart=$now;$expiresAt=null;
+        $betaActive=$betaStart!==null&&$betaEnd!==null&&$now>=$betaStart&&$now<$betaEnd;
+        if($betaActive){
+            $kind='trial';$expiresAt=$betaEnd;
+        }elseif($member!==null&&$betaEnd!==null&&$now>=$betaEnd){
+            if($member['post_beta_mode_snapshot']==='free')$kind='formal';
+            elseif((bool)$member['trial_enabled_snapshot']){
+                $kind='trial';$trialStart=$betaEnd;
+                $expiresAt=$betaEnd+(int)$member['trial_days_snapshot']*86400;
+            }
+        }elseif($configured&&$operations['post_beta_mode']==='free'&&
+            ($betaEnd===null||$now>=$betaEnd)){
+            $kind='formal';
+        }elseif((bool)$operations['trial_enabled']){
+            $kind='trial';$expiresAt=$now+(int)$operations['trial_days']*86400;
+        }elseif(!$configured&&$product==='desktop2stereo'){
+            $kind='trial';$expiresAt=$now+30*86400;
+        }
+        if($kind===null||($kind==='trial'&&($expiresAt===null||$expiresAt<=$now)))return null;
+        $productQuery=$db->prepare('SELECT code FROM portal_products WHERE code=? AND enabled=1 AND deleted_at IS NULL');
+        $productQuery->execute([$product]);
+        if($productQuery->fetchColumn()===false)throw new Problem('product_not_found',404);
+        $license=['id'=>bin2hex(random_bytes(16)),'user_id'=>$userId,'product'=>$product,'kind'=>$kind,'status'=>'active',
+            'trial_started_at'=>$trialStart,'expires_at'=>$expiresAt,'session_version'=>0];
+        $db->prepare('INSERT INTO portal_licenses
+            (id,user_id,product,kind,status,trial_started_at,expires_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)')
+            ->execute([$license['id'],$userId,$product,$kind,'active',$trialStart,$expiresAt,$now,$now]);
+        return $license;
     }
 
     private static function assertClientProfileTarget(string $platform,string $deviceType): void
@@ -380,6 +453,7 @@ final readonly class ClientLicensing
         $select = $this->db->prepare('SELECT * FROM portal_licenses WHERE user_id=? AND product=? FOR UPDATE');
         $select->execute([$id,$product]);
         $license = $select->fetch();
+        if($license!==false)$license=$this->resolveProductLicense($this->db,(int)$id,(string)$product,$license,$now,false);
         $select = $this->db->prepare('SELECT * FROM portal_client_sessions WHERE user_id=? AND product=? FOR UPDATE');
         $select->execute([$id,$product]);
         $session = $select->fetch();

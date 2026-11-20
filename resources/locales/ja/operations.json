@@ -1,4 +1,5 @@
 {
+  "errors.product_operations_beta_finished": "終了したベータ期間の設定はロックされています。",
   "errors.product_download_channel_not_found": "ダウンロードチャネルが見つかりません。",
   "errors.product_download_channel_disable_first": "削除する前にチャネルを無効にしてください。",
   "errors.product_release_channel_required": "各リリースファイルに少なくとも1つの利用可能なチャネルを残してください。",

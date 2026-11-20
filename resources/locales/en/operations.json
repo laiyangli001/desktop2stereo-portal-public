@@ -1,4 +1,5 @@
 {
+  "errors.product_operations_beta_finished": "Settings for this completed beta period are locked.",
   "errors.product_download_channel_not_found": "Download channel not found.",
   "errors.product_download_channel_disable_first": "Disable the channel before removing it.",
   "errors.product_release_channel_required": "Keep at least one available channel for each release file.",

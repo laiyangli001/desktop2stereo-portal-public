@@ -1,4 +1,5 @@
 {
+  "errors.product_operations_beta_finished": "La configuración de este periodo beta finalizado está bloqueada.",
   "errors.product_download_channel_not_found": "No se encontró el canal de descarga.",
   "errors.product_download_channel_disable_first": "Desactiva el canal antes de eliminarlo.",
   "errors.product_release_channel_required": "Cada archivo publicado debe conservar al menos un canal disponible.",

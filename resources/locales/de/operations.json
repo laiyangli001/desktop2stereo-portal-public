@@ -1,4 +1,5 @@
 {
+  "errors.product_operations_beta_finished": "Einstellungen für diese abgeschlossene Beta-Phase sind gesperrt.",
   "errors.product_download_channel_not_found": "Downloadkanal nicht gefunden.",
   "errors.product_download_channel_disable_first": "Deaktiviere den Kanal, bevor du ihn entfernst.",
   "errors.product_release_channel_required": "Für jede Release-Datei muss mindestens ein verfügbarer Kanal bleiben.",

@@ -1,4 +1,5 @@
 {
+  "errors.product_operations_beta_finished": "Cài đặt của đợt beta đã kết thúc đã bị khóa.",
   "errors.product_download_channel_not_found": "Không tìm thấy kênh tải.",
   "errors.product_download_channel_disable_first": "Hãy tắt kênh trước khi xóa.",
   "errors.product_release_channel_required": "Mỗi tệp phát hành cần còn ít nhất một kênh khả dụng.",

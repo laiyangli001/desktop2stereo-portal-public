@@ -987,7 +987,12 @@
       const trialEnabled = field(betaForm, 'trial_enabled', prtr('trial_enabled'), 'checkbox', operationConfig.trial_enabled);
       const trialDays = field(betaForm, 'trial_days', prtr('trial_days'), 'number', operationConfig.trial_days, {required:true});
       trialDays.min = '1'; trialDays.max = '3650'; trialDays.step = '1';
+      const betaLocked = operationConfig.beta_ends_at !== null && Number(operationConfig.beta_ends_at) <= Date.now() / 1000;
       const saveOperations = node('button', prtr('save_operations'), 'portal-primary'); saveOperations.type = 'submit'; betaForm.append(saveOperations);
+      if (betaLocked) {
+        for (const control of betaForm.elements) control.disabled = true;
+        betaForm.prepend(node('p', prtr('beta_locked'), 'wide portal-help'));
+      }
       betaForm.addEventListener('submit', async event => {
         event.preventDefault(); if (!betaForm.reportValidity()) return;
         try {

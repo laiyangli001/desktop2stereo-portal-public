@@ -357,6 +357,12 @@ final readonly class ProductReleaseManager
             $query->execute([$product]);$before=$query->fetch();
             $actual=$before===false?1:(int)$before['revision'];
             if($actual!==$revision)throw new Problem('record_changed',409);
+            if($end!==null&&$end<=$now)throw new Problem('product_operations_invalid');
+            if($before!==false&&$before['beta_ends_at']!==null&&(int)$before['beta_ends_at']<=$now)
+                throw new Problem('product_operations_beta_finished',409);
+            $betaWasActive=$before!==false&&$before['beta_starts_at']!==null&&$before['beta_ends_at']!==null&&
+                (int)$before['beta_starts_at']<=$now&&(int)$before['beta_ends_at']>$now;
+            if($betaWasActive&&($start===null||$end===null))throw new Problem('product_operations_invalid');
             $db->prepare('INSERT INTO portal_product_operations
                 (product_code,beta_starts_at,beta_ends_at,post_beta_mode,trial_enabled,trial_days,revision,updated_by,updated_at)
                 VALUES(?,?,?,?,?,?,1,?,?) ON DUPLICATE KEY UPDATE beta_starts_at=VALUES(beta_starts_at),
@@ -365,6 +371,11 @@ final readonly class ProductReleaseManager
                     updated_by=VALUES(updated_by),updated_at=VALUES(updated_at)')
                 ->execute([$product,$start,$end,$mode,(int)$trial,$days,$adminId,$now]);
             $next=$actual+($before===false?0:1);
+            if($betaWasActive){
+                $db->prepare('UPDATE portal_product_beta_members SET beta_revision=?,beta_ends_at=?,trial_enabled_snapshot=?,
+                    trial_days_snapshot=?,post_beta_mode_snapshot=? WHERE product_code=? AND beta_revision=?')
+                    ->execute([$next,$end,(int)$trial,$days,$mode,$product,$actual]);
+            }
             $snapshot=static fn(array $row):array=>[
                 'beta_starts_at'=>$row['beta_starts_at']===null?null:(int)$row['beta_starts_at'],
                 'beta_ends_at'=>$row['beta_ends_at']===null?null:(int)$row['beta_ends_at'],

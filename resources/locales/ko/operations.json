@@ -1,4 +1,5 @@
 {
+  "errors.product_operations_beta_finished": "종료된 베타 기간의 설정은 잠겨 있습니다.",
   "errors.product_download_channel_not_found": "다운로드 채널을 찾을 수 없습니다.",
   "errors.product_download_channel_disable_first": "삭제하기 전에 채널을 비활성화하세요.",
   "errors.product_release_channel_required": "각 릴리스 파일에 사용 가능한 채널을 하나 이상 유지하세요.",
