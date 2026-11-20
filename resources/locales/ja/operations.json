@@ -2,6 +2,8 @@
   "errors.product_operations_beta_finished": "終了したベータ期間の設定はロックされています。",
   "errors.product_download_channel_not_found": "ダウンロードチャネルが見つかりません。",
   "errors.product_download_channel_disable_first": "削除する前にチャネルを無効にしてください。",
+  "errors.product_release_test_required": "公開前にリリースをテスト済みにしてください。",
+  "errors.product_release_channels_unchecked": "各ファイルで有効なダウンロードチャネルを1つ以上テスト済みにしてください。",
   "errors.product_release_channel_required": "各リリースファイルに少なくとも1つの利用可能なチャネルを残してください。",
   "errors.product_release_immutable": "公開済みリリースはここでは変更できません。",
   "user_detail.beta_memberships": "ベータ参加履歴",

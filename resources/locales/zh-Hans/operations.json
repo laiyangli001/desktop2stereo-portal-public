@@ -2,6 +2,8 @@
   "errors.product_operations_beta_finished": "公测已结束，本轮配置已锁定。",
   "errors.product_download_channel_not_found": "找不到下载渠道。",
   "errors.product_download_channel_disable_first": "请先停用下载渠道，再移除。",
+  "errors.product_release_test_required": "发布前请先完成版本验收。",
+  "errors.product_release_channels_unchecked": "每个文件至少要有一个启用的下载渠道标记为实测通过。",
   "errors.product_release_channel_required": "每个发布文件至少要保留一个可用下载渠道。",
   "errors.product_release_immutable": "已发布版本不能修改此项。",
   "user_detail.beta_memberships": "公测参与记录",

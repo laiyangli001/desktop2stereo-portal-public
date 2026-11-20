@@ -2,6 +2,8 @@
   "errors.product_operations_beta_finished": "Cài đặt của đợt beta đã kết thúc đã bị khóa.",
   "errors.product_download_channel_not_found": "Không tìm thấy kênh tải.",
   "errors.product_download_channel_disable_first": "Hãy tắt kênh trước khi xóa.",
+  "errors.product_release_test_required": "Hãy đánh dấu bản phát hành đã kiểm tra trước khi phát hành.",
+  "errors.product_release_channels_unchecked": "Hãy đánh dấu ít nhất một kênh tải đang bật cho mỗi tệp là đã kiểm tra.",
   "errors.product_release_channel_required": "Mỗi tệp phát hành cần còn ít nhất một kênh khả dụng.",
   "errors.product_release_immutable": "Không thể sửa bản phát hành đã công bố tại đây.",
   "user_detail.beta_memberships": "Lịch sử tham gia beta",

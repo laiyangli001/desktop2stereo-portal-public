@@ -2,6 +2,8 @@
   "errors.product_operations_beta_finished": "Les paramètres de cette période bêta terminée sont verrouillés.",
   "errors.product_download_channel_not_found": "Canal de téléchargement introuvable.",
   "errors.product_download_channel_disable_first": "Désactivez le canal avant de le supprimer.",
+  "errors.product_release_test_required": "Marquez la version comme testée avant publication.",
+  "errors.product_release_channels_unchecked": "Marquez un canal de téléchargement activé comme testé pour chaque fichier.",
   "errors.product_release_channel_required": "Chaque fichier publié doit conserver au moins un canal disponible.",
   "errors.product_release_immutable": "Cette version publiée ne peut pas être modifiée ici.",
   "user_detail.beta_memberships": "Participations à la bêta",

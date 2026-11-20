@@ -126,6 +126,8 @@
     product_download_channel_not_found: tr('operations.errors.product_download_channel_not_found'),
     product_download_channel_disable_first: tr('operations.errors.product_download_channel_disable_first'),
     product_release_channel_required: tr('operations.errors.product_release_channel_required'),
+    product_release_channels_unchecked: tr('operations.errors.product_release_channels_unchecked'),
+    product_release_test_required: tr('operations.errors.product_release_test_required'),
     product_release_immutable: tr('operations.errors.product_release_immutable'),
     client_session_changed: tr('licensing.logout.changed'),
     client_session_invalid: tr('licensing.logout.failed'),
@@ -1049,13 +1051,25 @@
                 .format(new Date(Number(channel.checked_at)*1000));
             channelRow.append(node('p',checkText+(httpFailure?' (HTTP '+channel.check_error_code.slice(5)+')':'')+checkedTime,
               channel.check_status==='failed'?'portal-error':'portal-help'));
+            if(channel.tested_at){
+              const testedDate=new Intl.DateTimeFormat(document.documentElement.lang||undefined,{dateStyle:'medium',timeStyle:'short'})
+                .format(new Date(Number(channel.tested_at)*1000));
+              channelRow.append(node('p',prtr('channel_tested_at_by',{date:testedDate,admin:channel.tested_by_email||'—'}),'portal-help'));
+            }
+            if(['draft','published'].includes(release.status)&&channel.host_enabled)channelRow.append(button(prtr('check_channel'),async()=>{
+              try {
+                await request('/products/'+encodeURIComponent(product.code)+'/channels/'+channel.id+'/check',{});
+                await manageProductReleases(product);
+              } catch(error) { message(error,dialogMessage); }
+            }));
+            if(release.status==='draft'&&channel.enabled&&channel.host_enabled)channelRow.append(button(prtr('verify_channel'),async()=>{
+              if(!window.confirm(prtr('confirm_channel_test')))return;
+              try {
+                await request('/products/'+encodeURIComponent(product.code)+'/channels/'+channel.id+'/attest',{});
+                await manageProductReleases(product);
+              } catch(error) { message(error,dialogMessage); }
+            }));
             if(release.status==='published') {
-              if(channel.host_enabled)channelRow.append(button(prtr('check_channel'),async()=>{
-                try {
-                  await request('/products/'+encodeURIComponent(product.code)+'/channels/'+channel.id+'/check',{});
-                  await manageProductReleases(product);
-                } catch(error) { message(error,dialogMessage); }
-              }));
               channelRow.append(button(prtr('edit_channel'),()=>editDownloadChannel(release,file,channel)));
               if(!channel.enabled) channelRow.append(button(prtr('remove_channel'),async()=>{
                 if(!window.confirm(prtr('remove_channel_confirm')))return;
@@ -1070,10 +1084,26 @@
           card.append(fileCard);
         }
         if (release.status === 'draft') {
-          card.append(button(prtr('publish'), async () => {
+          const testedAt = Number(release.tested_at || 0);
+          if (testedAt) {
+            const date = new Intl.DateTimeFormat(document.documentElement.lang || undefined, {dateStyle:'medium',timeStyle:'short'})
+              .format(new Date(testedAt * 1000));
+            card.append(node('p', prtr('tested_at_by', {date, admin:release.tested_by_email || '—'}), 'portal-help'));
+          } else {
+            card.append(node('p', prtr('test_required'), 'portal-help'));
+            card.append(node('p', prtr('test_instruction'), 'portal-help'));
+            card.append(button(prtr('mark_tested'), async () => {
+              if (!window.confirm(prtr('confirm_test'))) return;
+              try { await request('/products/' + product.code + '/releases/' + release.id + '/test', {}); await refresh(); }
+              catch (error) { message(error, dialogMessage); }
+            }));
+          }
+          const publishButton = button(prtr('publish'), async () => {
             try { await request('/products/' + product.code + '/releases/' + release.id + '/publish', {}); await refresh(); }
             catch (error) { message(error, dialogMessage); }
-          }));
+          });
+          publishButton.disabled = !testedAt;
+          card.append(publishButton);
           card.append(button(prtr('edit_draft'), () => editRelease(release)));
         } else if (release.status === 'published') card.append(button(prtr('withdraw'), async () => {
           try { await request('/products/' + product.code + '/releases/' + release.id + '/withdraw', {}); await refresh(); }

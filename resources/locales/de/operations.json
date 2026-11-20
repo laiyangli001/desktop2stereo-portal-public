@@ -2,6 +2,8 @@
   "errors.product_operations_beta_finished": "Einstellungen für diese abgeschlossene Beta-Phase sind gesperrt.",
   "errors.product_download_channel_not_found": "Downloadkanal nicht gefunden.",
   "errors.product_download_channel_disable_first": "Deaktiviere den Kanal, bevor du ihn entfernst.",
+  "errors.product_release_test_required": "Release vor der Veröffentlichung als getestet markieren.",
+  "errors.product_release_channels_unchecked": "Für jede Datei mindestens einen aktivierten Downloadkanal als getestet markieren.",
   "errors.product_release_channel_required": "Für jede Release-Datei muss mindestens ein verfügbarer Kanal bleiben.",
   "errors.product_release_immutable": "Dieses veröffentlichte Release kann hier nicht geändert werden.",
   "user_detail.beta_memberships": "Beta-Teilnahmen",

@@ -2,6 +2,8 @@
   "errors.product_operations_beta_finished": "종료된 베타 기간의 설정은 잠겨 있습니다.",
   "errors.product_download_channel_not_found": "다운로드 채널을 찾을 수 없습니다.",
   "errors.product_download_channel_disable_first": "삭제하기 전에 채널을 비활성화하세요.",
+  "errors.product_release_test_required": "게시하기 전에 릴리스를 테스트 완료로 표시하세요.",
+  "errors.product_release_channels_unchecked": "각 파일에서 활성 다운로드 채널을 하나 이상 테스트 완료로 표시하세요.",
   "errors.product_release_channel_required": "각 릴리스 파일에 사용 가능한 채널을 하나 이상 유지하세요.",
   "errors.product_release_immutable": "게시된 릴리스는 여기서 변경할 수 없습니다.",
   "user_detail.beta_memberships": "베타 참여 기록",

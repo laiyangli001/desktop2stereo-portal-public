@@ -24,14 +24,17 @@ final readonly class ProductReleaseManager
         Permissions::require($this->db,$adminId,'products.manage');
         $product=ProductCatalog::code($product);
         $this->assertProduct($this->db,$product);
-        $query=$this->db->prepare('SELECT * FROM portal_product_releases WHERE product_code=? ORDER BY platform,version_code DESC');
+        $query=$this->db->prepare('SELECT r.*,a.email tested_by_email FROM portal_product_releases r
+            LEFT JOIN portal_admins a ON a.id=r.tested_by
+            WHERE r.product_code=? ORDER BY r.platform,r.version_code DESC');
         $query->execute([$product]);
         $items=$query->fetchAll();
         $files=$this->db->prepare('SELECT * FROM portal_product_release_files WHERE release_id=? ORDER BY architecture,file_format');
         $channels=$this->db->prepare('SELECT c.id,c.file_id,c.channel_name,c.provider,c.region_code,c.download_url,
-            c.sort_order,c.enabled,c.checked_at,c.check_status,c.check_error_code,c.passcode_ciphertext IS NOT NULL passcode_configured,
-            h.enabled host_enabled
+            c.sort_order,c.enabled,c.checked_at,c.check_status,c.check_error_code,c.tested_at,c.tested_by,
+            a.email tested_by_email,c.passcode_ciphertext IS NOT NULL passcode_configured,h.enabled host_enabled
             FROM portal_product_download_channels c LEFT JOIN portal_product_download_hosts h ON h.hostname=c.hostname
+            LEFT JOIN portal_admins a ON a.id=c.tested_by
             WHERE c.file_id=? ORDER BY c.sort_order,c.id');
         $policies=$this->db->prepare('SELECT minimum_supported_version,revision FROM portal_product_update_policies WHERE product_code=? AND platform=?');
         foreach($items as &$release){
@@ -40,6 +43,8 @@ final readonly class ProductReleaseManager
             $release['updated_at']=(int)$release['updated_at'];
             $release['published_at']=$release['published_at']===null?null:(int)$release['published_at'];
             $release['withdrawn_at']=$release['withdrawn_at']===null?null:(int)$release['withdrawn_at'];
+            $release['tested_at']=$release['tested_at']===null?null:(int)$release['tested_at'];
+            $release['tested_by']=$release['tested_by']===null?null:(int)$release['tested_by'];
             $policies->execute([$product,$release['platform']]);
             $policy=$policies->fetch()?:['minimum_supported_version'=>0,'revision'=>1];
             $release['minimum_supported_version']=(int)$policy['minimum_supported_version'];
@@ -56,6 +61,8 @@ final readonly class ProductReleaseManager
                     $channel['passcode_configured']=(bool)$channel['passcode_configured'];
                     $channel['host_enabled']=(bool)$channel['host_enabled'];
                     $channel['checked_at']=$channel['checked_at']===null?null:(int)$channel['checked_at'];
+                    $channel['tested_at']=$channel['tested_at']===null?null:(int)$channel['tested_at'];
+                    $channel['tested_by']=$channel['tested_by']===null?null:(int)$channel['tested_by'];
                 }
                 unset($channel);
             }
@@ -79,7 +86,7 @@ final readonly class ProductReleaseManager
         $query=$this->db->prepare('SELECT operator_email,operation_type,operation_time,result,details_json
             FROM portal_admin_audit WHERE target_resource=? AND operation_type IN (
                 \'CREATE_PRODUCT_RELEASE\',\'UPDATE_PRODUCT_RELEASE\',\'PUBLISH_PRODUCT_RELEASE\',\'WITHDRAW_PRODUCT_RELEASE\',
-                \'UPDATE_PRODUCT_DOWNLOAD_CHANNEL\',\'REMOVE_PRODUCT_DOWNLOAD_CHANNEL\',\'CHECK_PRODUCT_DOWNLOAD_CHANNEL\',
+                \'UPDATE_PRODUCT_DOWNLOAD_CHANNEL\',\'REMOVE_PRODUCT_DOWNLOAD_CHANNEL\',\'CHECK_PRODUCT_DOWNLOAD_CHANNEL\',\'TEST_PRODUCT_RELEASE_CHANNEL\',\'TEST_PRODUCT_RELEASE\',
                 \'UPDATE_PRODUCT_UPDATE_POLICY\',\'UPDATE_PRODUCT_OPERATIONS\'
             ) ORDER BY id DESC LIMIT 100');
         $query->execute([$product]);
@@ -174,7 +181,7 @@ final readonly class ProductReleaseManager
         $query->execute([$channelId,$product]);
         $channel=$query->fetch();
         if(!$channel)throw new Problem('product_download_channel_not_found',404);
-        if($channel['release_status']!=='published')throw new Problem('product_release_immutable',409);
+        if(!in_array($channel['release_status'],['draft','published'],true))throw new Problem('product_release_immutable',409);
         if(!(bool)$channel['host_enabled'])throw new Problem('product_download_host_not_allowed',403);
 
         $probe=UpdateHttp::probe((string)$channel['download_url'],(string)$channel['hostname']);
@@ -190,7 +197,7 @@ final readonly class ProductReleaseManager
             $query->execute([$channelId,$product]);
             $current=$query->fetch();
             if(!$current)throw new Problem('product_download_channel_not_found',404);
-            if($current['release_status']!=='published')throw new Problem('product_release_immutable',409);
+            if(!in_array($current['release_status'],['draft','published'],true))throw new Problem('product_release_immutable',409);
             if($current['hostname']!==$channel['hostname']||$current['download_url']!==$channel['download_url'])
                 throw new Problem('record_changed',409);
             if(!(bool)$current['host_enabled'])throw new Problem('product_download_host_not_allowed',403);
@@ -247,7 +254,7 @@ final readonly class ProductReleaseManager
                 $db->prepare('INSERT INTO portal_product_releases(id,product_code,platform,version_code,version_name,release_notes,status,created_by,created_at,updated_at)
                     VALUES(?,?,?,?,?,\'draft\',?,?,?,?)')->execute([$id,$product,$platform,$versionCode,$versionName,$notes,$adminId,$now,$now]);
             }else{
-                $db->prepare('UPDATE portal_product_releases SET version_code=?,version_name=?,release_notes=?,updated_at=? WHERE id=?')
+                $db->prepare('UPDATE portal_product_releases SET version_code=?,version_name=?,release_notes=?,tested_at=NULL,tested_by=NULL,updated_at=? WHERE id=?')
                     ->execute([$versionCode,$versionName,$notes,$now,$id]);
                 $db->prepare('DELETE FROM portal_product_release_files WHERE release_id=?')->execute([$id]);
             }
@@ -291,11 +298,12 @@ final readonly class ProductReleaseManager
             $q->execute([$releaseId,$product]);$release=$q->fetch();
             if(!$release)throw new Problem('product_release_not_found',404);
             if($release['status']!=='draft')throw new Problem('product_release_state_invalid',409);
+            if($release['tested_at']===null||$release['tested_by']===null)throw new Problem('product_release_test_required',409);
             $q=$db->prepare('SELECT MAX(version_code) FROM portal_product_releases WHERE product_code=? AND platform=? AND status=\'published\'');
             $q->execute([$product,$release['platform']]);$maximum=$q->fetchColumn();
             if($maximum!==false&&(int)$release['version_code']<=(int)$maximum)throw new Problem('product_release_version_not_newer',409);
             $q=$db->prepare('SELECT f.id,COUNT(c.id) channel_count FROM portal_product_release_files f
-                LEFT JOIN portal_product_download_channels c ON c.file_id=f.id AND c.enabled=1
+                LEFT JOIN portal_product_download_channels c ON c.file_id=f.id AND c.enabled=1 AND c.tested_at IS NOT NULL AND c.tested_by IS NOT NULL
                     AND EXISTS(SELECT 1 FROM portal_product_download_hosts h WHERE h.hostname=c.hostname AND h.enabled=1)
                 WHERE f.release_id=? GROUP BY f.id');
             $q->execute([$releaseId]);$files=$q->fetchAll();
@@ -307,6 +315,61 @@ final readonly class ProductReleaseManager
                 ['release_id'=>$releaseId,'platform'=>$release['platform'],'version_code'=>(int)$release['version_code'],
                     'file_count'=>count($files),'status_before'=>'draft','status_after'=>'published'], $context,$now);
             return ['id'=>$releaseId,'status'=>'published','published_at'=>$now];
+        });
+    }
+
+    public function attestDownloadChannel(int $adminId,string $product,string $channelId,array $context,int $now): array
+    {
+        Permissions::require($this->db,$adminId,'products.manage');
+        $product=ProductCatalog::code($product);$channelId=self::id($channelId);
+        return Database::transaction($this->db,function(PDO $db)use($adminId,$product,$channelId,$context,$now):array{
+            $query=$db->prepare('SELECT r.id,r.status FROM portal_product_releases r
+                JOIN portal_product_release_files f ON f.release_id=r.id
+                JOIN portal_product_download_channels c ON c.file_id=f.id
+                WHERE r.product_code=? AND c.id=? FOR UPDATE');
+            $query->execute([$product,$channelId]);$release=$query->fetch();
+            if(!$release)throw new Problem('product_download_channel_not_found',404);
+            if($release['status']!=='draft')throw new Problem('product_release_immutable',409);
+            $query=$db->prepare('SELECT c.enabled,h.enabled host_enabled FROM portal_product_download_channels c
+                LEFT JOIN portal_product_release_files f ON f.id=c.file_id
+                LEFT JOIN portal_product_download_hosts h ON h.hostname=c.hostname
+                WHERE c.id=? FOR UPDATE');
+            $query->execute([$channelId]);$channel=$query->fetch();
+            if(!$channel||!(bool)$channel['enabled']||!(bool)$channel['host_enabled'])
+                throw new Problem('product_release_channel_required',409);
+            $db->prepare('UPDATE portal_product_download_channels SET tested_at=?,tested_by=?,updated_at=? WHERE id=?')
+                ->execute([$now,$adminId,$now,$channelId]);
+            (new Backoffice($db))->audit($adminId,'TEST_PRODUCT_RELEASE_CHANNEL',$product,[
+                'channel_id'=>$channelId,'release_id'=>$release['id'],'tested_at'=>$now,
+            ],$context,$now);
+            return ['channel_id'=>$channelId,'tested_at'=>$now,'tested_by'=>$adminId];
+        });
+    }
+
+    public function markTested(int $adminId,string $product,string $releaseId,array $context,int $now): array
+    {
+        Permissions::require($this->db,$adminId,'products.manage');
+        $product=ProductCatalog::code($product);$releaseId=self::id($releaseId);
+        return Database::transaction($this->db,function(PDO $db)use($adminId,$product,$releaseId,$context,$now):array{
+            $query=$db->prepare('SELECT status,tested_at,tested_by FROM portal_product_releases WHERE id=? AND product_code=? FOR UPDATE');
+            $query->execute([$releaseId,$product]);$release=$query->fetch();
+            if(!$release)throw new Problem('product_release_not_found',404);
+            if($release['status']!=='draft')throw new Problem('product_release_state_invalid',409);
+            $query=$db->prepare('SELECT f.id,COUNT(CASE WHEN c.enabled=1 AND h.enabled=1 AND c.tested_at IS NOT NULL AND c.tested_by IS NOT NULL THEN 1 END) verified_count
+                FROM portal_product_release_files f
+                LEFT JOIN portal_product_download_channels c ON c.file_id=f.id
+                LEFT JOIN portal_product_download_hosts h ON h.hostname=c.hostname
+                WHERE f.release_id=? GROUP BY f.id');
+            $query->execute([$releaseId]);$files=$query->fetchAll();
+            if($files===[])throw new Problem('product_release_files_required');
+            foreach($files as$file)if((int)$file['verified_count']<1)throw new Problem('product_release_channels_unchecked',409);
+            $channelCount=array_sum(array_map(static fn(array $file):int=>(int)$file['verified_count'],$files));
+            $db->prepare('UPDATE portal_product_releases SET tested_at=?,tested_by=?,updated_at=? WHERE id=?')
+                ->execute([$now,$adminId,$now,$releaseId]);
+            (new Backoffice($db))->audit($adminId,'TEST_PRODUCT_RELEASE',$product,[
+                'release_id'=>$releaseId,'file_count'=>count($files),'verified_channel_count'=>$channelCount,'tested_at'=>$now,
+            ],$context,$now);
+            return ['id'=>$releaseId,'tested_at'=>$now,'tested_by'=>$adminId,'file_count'=>count($files)];
         });
     }
 
@@ -467,6 +530,14 @@ final readonly class ProductReleaseManager
             $q=$db->prepare('SELECT enabled FROM portal_product_download_hosts WHERE hostname=? FOR UPDATE');$q->execute([$host]);
             $before=$q->fetchColumn();if($before===false)throw new Problem('product_download_host_not_found',404);
             $db->prepare('UPDATE portal_product_download_hosts SET enabled=0,updated_at=? WHERE hostname=?')->execute([$now,$host]);
+            $db->prepare("UPDATE portal_product_download_channels c JOIN portal_product_release_files f ON f.id=c.file_id
+                JOIN portal_product_releases r ON r.id=f.release_id
+                SET c.tested_at=NULL,c.tested_by=NULL,c.updated_at=?
+                WHERE r.status='draft' AND c.hostname=?")->execute([$now,$host]);
+            $db->prepare("UPDATE portal_product_releases r JOIN portal_product_release_files f ON f.release_id=r.id
+                JOIN portal_product_download_channels c ON c.file_id=f.id
+                SET r.tested_at=NULL,r.tested_by=NULL,r.updated_at=? WHERE r.status='draft' AND c.hostname=?")
+                ->execute([$now,$host]);
             (new Backoffice($db))->audit($adminId,'DISABLE_PRODUCT_DOWNLOAD_HOST',$host,
                 ['enabled_before'=>(bool)$before,'enabled_after'=>false],$context,$now);
         });
@@ -549,12 +620,12 @@ final readonly class ProductReleaseManager
 
     private function auditSnapshot(PDO $db,string $releaseId): array
     {
-        $q=$db->prepare('SELECT platform,version_code,version_name,release_notes,status FROM portal_product_releases WHERE id=?');
+        $q=$db->prepare('SELECT platform,version_code,version_name,release_notes,status,tested_at,tested_by FROM portal_product_releases WHERE id=?');
         $q->execute([$releaseId]);$release=$q->fetch();
         if(!$release)return [];
         $q=$db->prepare('SELECT f.architecture,f.file_format,f.file_name,f.byte_size,f.sha256,f.android_package_name,f.android_signing_sha256,
-            c.channel_name,c.provider,c.region_code,c.sort_order,c.enabled,c.passcode_ciphertext IS NOT NULL passcode_configured,
-            c.hostname
+            c.channel_name,c.provider,c.region_code,c.sort_order,c.enabled,c.tested_at,c.tested_by,
+            c.passcode_ciphertext IS NOT NULL passcode_configured,c.hostname
             FROM portal_product_release_files f LEFT JOIN portal_product_download_channels c ON c.file_id=f.id WHERE f.release_id=?
             ORDER BY f.architecture,f.file_format,c.sort_order,c.id');
         $q->execute([$releaseId]);

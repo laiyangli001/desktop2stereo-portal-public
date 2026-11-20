@@ -2,6 +2,8 @@
   "errors.product_operations_beta_finished": "公測已結束，本輪設定已鎖定。",
   "errors.product_download_channel_not_found": "找不到下載渠道。",
   "errors.product_download_channel_disable_first": "請先停用下載渠道，再移除。",
+  "errors.product_release_test_required": "發佈前請先完成版本驗收。",
+  "errors.product_release_channels_unchecked": "每個檔案至少要有一個啟用的下載渠道標記為實測通過。",
   "errors.product_release_channel_required": "每個發佈檔案至少要保留一個可用下載渠道。",
   "errors.product_release_immutable": "已發佈版本無法修改此項。",
   "user_detail.beta_memberships": "公測參與記錄",

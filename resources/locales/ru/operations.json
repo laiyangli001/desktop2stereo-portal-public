@@ -2,6 +2,8 @@
   "errors.product_operations_beta_finished": "Настройки завершившегося бета-периода заблокированы.",
   "errors.product_download_channel_not_found": "Канал загрузки не найден.",
   "errors.product_download_channel_disable_first": "Отключите канал перед удалением.",
+  "errors.product_release_test_required": "Перед публикацией отметьте релиз как проверенный.",
+  "errors.product_release_channels_unchecked": "Отметьте хотя бы один включённый канал загрузки для каждого файла как проверенный.",
   "errors.product_release_channel_required": "Для каждого файла релиза должен оставаться хотя бы один доступный канал.",
   "errors.product_release_immutable": "Этот опубликованный релиз нельзя изменить здесь.",
   "user_detail.beta_memberships": "Участие в бета-тестировании",

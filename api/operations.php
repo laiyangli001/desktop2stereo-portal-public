@@ -39,14 +39,19 @@ if($productImageWrite){
 }elseif(preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/releases$#D',$route,$productReleaseRoute)){
     $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
     $data=$write?$manager->saveRelease($adminId,$productReleaseRoute[1],$input,$context,$now):$manager->releases($adminId,$productReleaseRoute[1]);
-}elseif($method==='POST'&&preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/releases/([a-f0-9]{32})/(publish|withdraw)$#D',$route,$releaseActionRoute)){
+}elseif($method==='POST'&&preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/releases/([a-f0-9]{32})/(test|publish|withdraw)$#D',$route,$releaseActionRoute)){
     $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
-    $data=$releaseActionRoute[3]==='publish'
-        ?$manager->publish($adminId,$releaseActionRoute[1],$releaseActionRoute[2],$context,$now)
-        :$manager->withdraw($adminId,$releaseActionRoute[1],$releaseActionRoute[2],$context,$now);
+    $data=match($releaseActionRoute[3]){
+        'test'=>$manager->markTested($adminId,$releaseActionRoute[1],$releaseActionRoute[2],$context,$now),
+        'publish'=>$manager->publish($adminId,$releaseActionRoute[1],$releaseActionRoute[2],$context,$now),
+        default=>$manager->withdraw($adminId,$releaseActionRoute[1],$releaseActionRoute[2],$context,$now),
+    };
 }elseif($method==='GET'&&preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/release-history$#D',$route,$releaseHistoryRoute)){
     $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
     $data=$manager->releaseHistory($adminId,$releaseHistoryRoute[1]);
+}elseif($method==='POST'&&preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/channels/([a-f0-9]{32})/attest$#D',$route,$attestDownloadChannelRoute)){
+    $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
+    $data=$manager->attestDownloadChannel($adminId,$attestDownloadChannelRoute[1],$attestDownloadChannelRoute[2],$context,$now);
 }elseif($method==='POST'&&preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/channels/([a-f0-9]{32})/check$#D',$route,$checkDownloadChannelRoute)){
     $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
     $data=$manager->checkDownloadChannel($adminId,$checkDownloadChannelRoute[1],$checkDownloadChannelRoute[2],$context,$now);
