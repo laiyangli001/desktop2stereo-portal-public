@@ -133,6 +133,10 @@ final readonly class Backoffice
         $user['licenses']=(new LicenseOverview($this->db))->all($id,function_exists('d2s_locale_code')?d2s_locale_code():'en');
         $q=$this->db->prepare('SELECT product,device_hash,session_version,created_at,verified_at,expires_at FROM portal_client_sessions WHERE user_id=? ORDER BY product');
         $q->execute([$id]);$user['client_sessions']=$q->fetchAll();
+        $q=$this->db->prepare('SELECT product_code,platform,last_client_login_at,last_version_reported_at,version_code,version_name,architecture FROM portal_product_user_activity WHERE user_id=? ORDER BY product_code,platform');
+        $q->execute([$id]);$user['client_activity']=$q->fetchAll();
+        $q=$this->db->prepare('SELECT product_code,platform,device_type,os_name,os_version,os_build,gpu_model,android_api_level,device_model,reported_at FROM portal_product_user_environment WHERE user_id=? ORDER BY product_code,platform,device_type');
+        $q->execute([$id]);$user['client_environments']=$q->fetchAll();
         $q=$this->db->prepare('SELECT register_ip,register_time FROM portal_registration_records WHERE user_id=? ORDER BY id LIMIT 1');
         $q->execute([$id]);$registration=$q->fetch();
         $user['registration']=$registration?['time'=>$registration['register_time'],'ip'=>$registration['register_ip'],

@@ -344,6 +344,31 @@
         [tr('operations.user_detail.last_payment'), item => date(item.last_payment_at)],
       ], payments));
     }
+    const products = new Map(licenses.map(item => [item.product, item.title || item.product]));
+    const activity = user.client_activity || [];
+    if (activity.length) {
+      detail.append(node('h3', tr('operations.user_detail.client_activity'), 'operation-section-title'));
+      detail.append(table([
+        [tr('operations.user_detail.product'), item => products.get(item.product_code) || item.product_code],
+        [tr('operations.user_detail.platform'), item => item.platform],
+        [tr('operations.user_detail.client_last_login'), item => date(item.last_client_login_at)],
+        [tr('operations.user_detail.client_version'), item => stack(item.version_name || '', item.version_code ? 'code ' + item.version_code + (item.architecture ? ' · ' + item.architecture : '') : '')],
+        [tr('operations.user_detail.version_reported'), item => date(item.last_version_reported_at)],
+      ], activity));
+    }
+    const environments = user.client_environments || [];
+    if (environments.length) {
+      detail.append(node('h3', tr('operations.user_detail.device_environment'), 'operation-section-title'));
+      detail.append(table([
+        [tr('operations.user_detail.product'), item => products.get(item.product_code) || item.product_code],
+        [tr('operations.user_detail.platform_device'), item => stack(item.platform, item.device_type)],
+        [tr('operations.user_detail.system'), item => stack([item.os_name, item.os_version].filter(Boolean).join(' '), item.os_build)],
+        [tr('operations.user_detail.graphics_card'), item => item.gpu_model],
+        [tr('operations.user_detail.device_model'), item => item.device_model],
+        [tr('operations.user_detail.android_api'), item => item.android_api_level],
+        [tr('operations.user_detail.environment_reported'), item => date(item.reported_at)],
+      ], environments));
+    }
   }
   async function userDetail(id) {
     showDialog(tr('operations.user_detail.user_details'));
