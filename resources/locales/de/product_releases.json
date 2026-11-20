@@ -1,5 +1,11 @@
 {
   "beta_locked": "Einstellungen für diese abgeschlossene Beta-Phase sind gesperrt.",
+  "connectivity_hint": "Diese Prüfung bestätigt nur die HTTPS-Erreichbarkeit vom Portalserver. Testen Sie vor der Veröffentlichung den vollständigen Download und SHA-256 in den Zielregionen.",
+  "check_channel": "Kanalverbindung prüfen",
+  "channel_reachable": "Vom Portal erreichbar",
+  "channel_unreachable": "Nicht erreichbar",
+  "channel_unchecked": "Noch nicht geprüft",
+  "channel_checked": "Prüfzeit",
   "history": "Änderungsverlauf",
   "history_empty": "Noch keine Änderungsdaten.",
   "edit_channel": "Kanal bearbeiten",

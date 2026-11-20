@@ -1,5 +1,11 @@
 {
   "beta_locked": "As configurações deste período beta encerrado estão bloqueadas.",
+  "connectivity_hint": "Esta verificação confirma apenas a acessibilidade HTTPS a partir do servidor do portal. Antes da publicação, teste o download completo e o SHA-256 nas regiões de destino.",
+  "check_channel": "Verificar canal",
+  "channel_reachable": "Acessível pelo portal",
+  "channel_unreachable": "Inacessível",
+  "channel_unchecked": "Não verificado",
+  "channel_checked": "Verificado",
   "history": "Histórico de alterações",
   "history_empty": "Ainda não há alterações.",
   "edit_channel": "Editar canal",

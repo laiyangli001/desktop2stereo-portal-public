@@ -1,5 +1,11 @@
 {
   "beta_locked": "Settings for this completed beta period are locked.",
+  "connectivity_hint": "This check only confirms HTTPS reachability from the portal server. Test the full download and SHA-256 from target regions before release.",
+  "check_channel": "Check channel",
+  "channel_reachable": "Reachable from portal",
+  "channel_unreachable": "Unreachable",
+  "channel_unchecked": "Not checked",
+  "channel_checked": "Checked",
   "history": "Change history",
   "history_empty": "No change history yet.",
   "edit_channel": "Edit channel",

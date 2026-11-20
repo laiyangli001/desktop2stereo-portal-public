@@ -44,6 +44,46 @@ final class UpdateHttp
         return ['body'=>$body,'status'=>$status,'location'=>$location,'download_bytes'=>$downloaded,'download_total_bytes'=>$total];
     }
 
+    public static function probe(string $url,string $host,int $timeout=10): array
+    {
+        $parsed=parse_url($url);
+        $urlHost=is_array($parsed)?strtolower(rtrim((string)($parsed['host']??''),'.')):'';
+        if(!is_array($parsed)||strtolower((string)($parsed['scheme']??''))!=='https'||
+            $urlHost!==strtolower(rtrim($host,'.'))||isset($parsed['user'])||isset($parsed['pass'])||
+            (isset($parsed['port'])&&(int)$parsed['port']!==443)){
+            return ['reachable'=>false,'http_status'=>null,'error_code'=>'invalid_url'];
+        }
+        try{
+            $address=self::publicAddresses($host)[0];
+        }catch(RuntimeException $error){
+            return ['reachable'=>false,'http_status'=>null,'error_code'=>$error->getMessage()];
+        }
+        if(!function_exists('curl_init'))return ['reachable'=>false,'http_status'=>null,'error_code'=>'curl_unavailable'];
+        $curl=curl_init($url);
+        if($curl===false)return ['reachable'=>false,'http_status'=>null,'error_code'=>'connection_failed'];
+        $timeout=max(1,min(15,$timeout));
+        $options=[
+            CURLOPT_NOBODY=>true,CURLOPT_CUSTOMREQUEST=>'HEAD',CURLOPT_FOLLOWLOCATION=>false,
+            CURLOPT_CONNECTTIMEOUT=>min(5,$timeout),CURLOPT_TIMEOUT=>$timeout,
+            CURLOPT_PROTOCOLS=>CURLPROTO_HTTPS,CURLOPT_SSL_VERIFYPEER=>true,CURLOPT_SSL_VERIFYHOST=>2,
+            CURLOPT_PROXY=>'',CURLOPT_USERAGENT=>'Desktop2Stereo-Portal-Channel-Check',
+        ];
+        if(!filter_var($host,FILTER_VALIDATE_IP)){
+            $options[CURLOPT_RESOLVE]=[$host.':443:'.(str_contains($address,':')?'['.$address.']':$address)];
+        }
+        curl_setopt_array($curl,$options);
+        $ok=curl_exec($curl);
+        $status=(int)curl_getinfo($curl,CURLINFO_RESPONSE_CODE);
+        $errno=curl_errno($curl);
+        curl_close($curl);
+        if($ok===false||$errno!==0){
+            $errorCode=$errno===28?'timeout':(in_array($errno,[35,51,53,54,58,60,66,77],true)?'tls_error':'connection_failed');
+            return ['reachable'=>false,'http_status'=>$status?:null,'error_code'=>$errorCode];
+        }
+        $reachable=$status>=200&&$status<400;
+        return ['reachable'=>$reachable,'http_status'=>$status,'error_code'=>$reachable?null:'http_'.$status];
+    }
+
     private static function publicAddresses(string $host): array
     {
         if(filter_var($host,FILTER_VALIDATE_IP))$addresses=[$host];

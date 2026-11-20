@@ -79,7 +79,8 @@ final readonly class ProductReleaseManager
         $query=$this->db->prepare('SELECT operator_email,operation_type,operation_time,result,details_json
             FROM portal_admin_audit WHERE target_resource=? AND operation_type IN (
                 \'CREATE_PRODUCT_RELEASE\',\'UPDATE_PRODUCT_RELEASE\',\'PUBLISH_PRODUCT_RELEASE\',\'WITHDRAW_PRODUCT_RELEASE\',
-                \'UPDATE_PRODUCT_DOWNLOAD_CHANNEL\',\'REMOVE_PRODUCT_DOWNLOAD_CHANNEL\',\'UPDATE_PRODUCT_UPDATE_POLICY\',\'UPDATE_PRODUCT_OPERATIONS\'
+                \'UPDATE_PRODUCT_DOWNLOAD_CHANNEL\',\'REMOVE_PRODUCT_DOWNLOAD_CHANNEL\',\'CHECK_PRODUCT_DOWNLOAD_CHANNEL\',
+                \'UPDATE_PRODUCT_UPDATE_POLICY\',\'UPDATE_PRODUCT_OPERATIONS\'
             ) ORDER BY id DESC LIMIT 100');
         $query->execute([$product]);
         $items=[];
@@ -156,6 +157,50 @@ final readonly class ProductReleaseManager
             (new Backoffice($db))->audit($adminId,'UPDATE_PRODUCT_DOWNLOAD_CHANNEL',$product,
                 ['channel_id'=>$channelId,'before'=>$snapshot($before),'after'=>$after],$context,$now);
             return ['id'=>$channelId,'saved'=>true,'enabled'=>$channel['enabled']];
+        });
+    }
+
+    public function checkDownloadChannel(int $adminId,string $product,string $channelId,array $context,int $now): array
+    {
+        Permissions::require($this->db,$adminId,'products.manage');
+        $product=ProductCatalog::code($product);
+        $channelId=self::id($channelId);
+        $query=$this->db->prepare('SELECT c.hostname,c.download_url,h.enabled host_enabled,r.status release_status
+            FROM portal_product_download_channels c
+            JOIN portal_product_release_files f ON f.id=c.file_id
+            JOIN portal_product_releases r ON r.id=f.release_id
+            LEFT JOIN portal_product_download_hosts h ON h.hostname=c.hostname
+            WHERE c.id=? AND r.product_code=?');
+        $query->execute([$channelId,$product]);
+        $channel=$query->fetch();
+        if(!$channel)throw new Problem('product_download_channel_not_found',404);
+        if($channel['release_status']!=='published')throw new Problem('product_release_immutable',409);
+        if(!(bool)$channel['host_enabled'])throw new Problem('product_download_host_not_allowed',403);
+
+        $probe=UpdateHttp::probe((string)$channel['download_url'],(string)$channel['hostname']);
+        $status=$probe['reachable']?'reachable':'failed';
+        $errorCode=$probe['error_code'];
+        return Database::transaction($this->db,function(PDO $db)use($adminId,$product,$channelId,$channel,$probe,$status,$errorCode,$context,$now):array{
+            $query=$db->prepare('SELECT c.hostname,c.download_url,h.enabled host_enabled,r.status release_status
+                FROM portal_product_download_channels c
+                JOIN portal_product_release_files f ON f.id=c.file_id
+                JOIN portal_product_releases r ON r.id=f.release_id
+                LEFT JOIN portal_product_download_hosts h ON h.hostname=c.hostname
+                WHERE c.id=? AND r.product_code=? FOR UPDATE');
+            $query->execute([$channelId,$product]);
+            $current=$query->fetch();
+            if(!$current)throw new Problem('product_download_channel_not_found',404);
+            if($current['release_status']!=='published')throw new Problem('product_release_immutable',409);
+            if($current['hostname']!==$channel['hostname']||$current['download_url']!==$channel['download_url'])
+                throw new Problem('record_changed',409);
+            if(!(bool)$current['host_enabled'])throw new Problem('product_download_host_not_allowed',403);
+            $db->prepare('UPDATE portal_product_download_channels SET checked_at=?,check_status=?,check_error_code=?,updated_at=? WHERE id=?')
+                ->execute([$now,$status,$errorCode,$now,$channelId]);
+            (new Backoffice($db))->audit($adminId,'CHECK_PRODUCT_DOWNLOAD_CHANNEL',$product,[
+                'channel_id'=>$channelId,'status'=>$status,'http_status'=>$probe['http_status'],'error_code'=>$errorCode,
+            ],$context,$now);
+            return ['id'=>$channelId,'check_status'=>$status,'check_error_code'=>$errorCode,
+                'checked_at'=>$now,'http_status'=>$probe['http_status']];
         });
     }
 

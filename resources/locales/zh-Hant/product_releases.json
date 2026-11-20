@@ -1,5 +1,11 @@
 {
   "beta_locked": "公測已結束，本輪設定已鎖定。",
+  "connectivity_hint": "此檢查只確認入口網站伺服器可透過 HTTPS 存取此管道。發布前仍需在目標地區實測完整下載並校驗 SHA-256。",
+  "check_channel": "檢查管道",
+  "channel_reachable": "入口網站可存取",
+  "channel_unreachable": "無法存取",
+  "channel_unchecked": "尚未檢查",
+  "channel_checked": "檢查時間",
   "history": "發布記錄",
   "history_empty": "暫無發布記錄。",
   "edit_channel": "編輯渠道",

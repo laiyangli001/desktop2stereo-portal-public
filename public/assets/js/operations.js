@@ -934,6 +934,7 @@
     };
     const refresh = async () => {
       panel.replaceChildren();
+      panel.append(node('p',prtr('connectivity_hint'),'wide portal-help'));
       const historyPanel=node('details',null,'admin-panel');
       historyPanel.append(node('summary',prtr('history')));
       const historyItems=node('div');
@@ -1040,7 +1041,21 @@
             const channelRow=node('div',null,'operation-panel-actions');
             channelRow.append(node('p', channel.channel_name + ' · ' + channel.region_code + ' · ' + channel.download_url +
               (channel.enabled ? '' : ' · ' + prtr('disabled'))));
+            const checkText=channel.check_status==='reachable'?prtr('channel_reachable'):
+              channel.check_status==='failed'?prtr('channel_unreachable'):prtr('channel_unchecked');
+            const httpFailure=/^http_[0-9]{3}$/.test(channel.check_error_code||'');
+            const checkedTime=channel.checked_at===null||channel.checked_at===undefined?'':' · '+prtr('channel_checked')+': '+
+              new Intl.DateTimeFormat(document.documentElement.lang||undefined,{dateStyle:'medium',timeStyle:'short'})
+                .format(new Date(Number(channel.checked_at)*1000));
+            channelRow.append(node('p',checkText+(httpFailure?' (HTTP '+channel.check_error_code.slice(5)+')':'')+checkedTime,
+              channel.check_status==='failed'?'portal-error':'portal-help'));
             if(release.status==='published') {
+              if(channel.host_enabled)channelRow.append(button(prtr('check_channel'),async()=>{
+                try {
+                  await request('/products/'+encodeURIComponent(product.code)+'/channels/'+channel.id+'/check',{});
+                  await manageProductReleases(product);
+                } catch(error) { message(error,dialogMessage); }
+              }));
               channelRow.append(button(prtr('edit_channel'),()=>editDownloadChannel(release,file,channel)));
               if(!channel.enabled) channelRow.append(button(prtr('remove_channel'),async()=>{
                 if(!window.confirm(prtr('remove_channel_confirm')))return;

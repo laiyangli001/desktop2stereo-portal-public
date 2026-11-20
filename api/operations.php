@@ -47,6 +47,9 @@ if($productImageWrite){
 }elseif($method==='GET'&&preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/release-history$#D',$route,$releaseHistoryRoute)){
     $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
     $data=$manager->releaseHistory($adminId,$releaseHistoryRoute[1]);
+}elseif($method==='POST'&&preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/channels/([a-f0-9]{32})/check$#D',$route,$checkDownloadChannelRoute)){
+    $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
+    $data=$manager->checkDownloadChannel($adminId,$checkDownloadChannelRoute[1],$checkDownloadChannelRoute[2],$context,$now);
 }elseif($method==='POST'&&preg_match('#^/products/([a-z][a-z0-9_-]{2,31})/channels/([a-f0-9]{32})(?:/(remove))?$#D',$route,$downloadChannelRoute)){
     $manager=new D2S\services\ProductReleaseManager($db,D2S\services\SecretBox::fromEnvironment());
     $data=$manager->updateDownloadChannel($adminId,$downloadChannelRoute[1],$downloadChannelRoute[2],$input,$context,$now,

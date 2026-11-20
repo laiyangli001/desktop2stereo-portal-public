@@ -1,5 +1,11 @@
 {
   "beta_locked": "公测已结束，本轮配置已锁定。",
+  "connectivity_hint": "此检查只确认门户服务器可通过 HTTPS 访问该渠道。发布前仍需在目标地区实测完整下载并校验 SHA-256。",
+  "check_channel": "检查渠道",
+  "channel_reachable": "门户可访问",
+  "channel_unreachable": "无法访问",
+  "channel_unchecked": "尚未检查",
+  "channel_checked": "检查时间",
   "history": "发布记录",
   "history_empty": "暂无发布记录。",
   "edit_channel": "编辑渠道",

@@ -1,5 +1,11 @@
 {
   "beta_locked": "Cài đặt của đợt beta đã kết thúc đã bị khóa.",
+  "connectivity_hint": "Kiểm tra này chỉ xác nhận kênh có thể truy cập qua HTTPS từ máy chủ cổng thông tin. Trước khi phát hành, hãy thử tải đầy đủ và xác minh SHA-256 từ các khu vực đích.",
+  "check_channel": "Kiểm tra kênh",
+  "channel_reachable": "Có thể truy cập từ cổng",
+  "channel_unreachable": "Không thể truy cập",
+  "channel_unchecked": "Chưa kiểm tra",
+  "channel_checked": "Đã kiểm tra",
   "history": "Lịch sử thay đổi",
   "history_empty": "Chưa có lịch sử thay đổi.",
   "edit_channel": "Sửa kênh tải",

@@ -1,5 +1,11 @@
 {
   "beta_locked": "終了したベータ期間の設定はロックされています。",
+  "connectivity_hint": "この確認で分かるのはポータルサーバーからHTTPSで接続できることだけです。公開前に対象地域から完全なダウンロードとSHA-256を確認してください。",
+  "check_channel": "チャネルを確認",
+  "channel_reachable": "ポータルから到達可能",
+  "channel_unreachable": "到達不可",
+  "channel_unchecked": "未確認",
+  "channel_checked": "確認日時",
   "history": "変更履歴",
   "history_empty": "変更履歴はありません。",
   "edit_channel": "チャネルを編集",

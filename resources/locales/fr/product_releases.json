@@ -1,5 +1,11 @@
 {
   "beta_locked": "Les paramètres de cette période bêta terminée sont verrouillés.",
+  "connectivity_hint": "Ce contrôle confirme uniquement l’accès HTTPS au canal depuis le serveur du portail. Avant la publication, testez le téléchargement complet et le SHA-256 depuis les régions cibles.",
+  "check_channel": "Vérifier le canal",
+  "channel_reachable": "Accessible depuis le portail",
+  "channel_unreachable": "Inaccessible",
+  "channel_unchecked": "Non vérifié",
+  "channel_checked": "Vérifié",
   "history": "Historique des modifications",
   "history_empty": "Aucune modification pour le moment.",
   "edit_channel": "Modifier le canal",
