@@ -1,4 +1,12 @@
 {
+  "user_detail.beta_memberships": "Участие в бета-тестировании",
+  "user_detail.beta_joined": "Дата участия",
+  "user_detail.beta_ends": "Окончание бета-тестирования",
+  "user_detail.post_beta_mode": "Режим после бета-тестирования",
+  "user_detail.beta_trial": "Пробный период во время бета-тестирования",
+  "user_detail.beta_trial_days": "Дней пробного периода",
+  "user_detail.post_beta_free": "Бесплатно",
+  "user_detail.post_beta_paid": "Платно",
   "filters.client_activity": "Активность клиента",
   "filters.recent_client_login": "Вход за последние 30 дней",
   "filters.inactive_30_days": "Нет входа более 30 дней",

@@ -1,4 +1,12 @@
 {
+  "user_detail.beta_memberships": "Beta-Teilnahmen",
+  "user_detail.beta_joined": "Beitritt",
+  "user_detail.beta_ends": "Ende der Beta",
+  "user_detail.post_beta_mode": "Modus nach der Beta",
+  "user_detail.beta_trial": "Testphase während der Beta",
+  "user_detail.beta_trial_days": "Testtage",
+  "user_detail.post_beta_free": "Kostenlos",
+  "user_detail.post_beta_paid": "Kostenpflichtig",
   "filters.client_activity": "Client-Aktivität",
   "filters.recent_client_login": "Anmeldung innerhalb von 30 Tagen",
   "filters.inactive_30_days": "Seit über 30 Tagen keine Anmeldung",

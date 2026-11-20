@@ -1,4 +1,12 @@
 {
+  "user_detail.beta_memberships": "Lịch sử tham gia beta",
+  "user_detail.beta_joined": "Thời gian tham gia",
+  "user_detail.beta_ends": "Thời gian kết thúc beta",
+  "user_detail.post_beta_mode": "Chế độ sau beta",
+  "user_detail.beta_trial": "Dùng thử trong beta",
+  "user_detail.beta_trial_days": "Số ngày dùng thử",
+  "user_detail.post_beta_free": "Miễn phí",
+  "user_detail.post_beta_paid": "Trả phí",
   "filters.client_activity": "Hoạt động ứng dụng",
   "filters.recent_client_login": "Đăng nhập trong 30 ngày gần đây",
   "filters.inactive_30_days": "Không đăng nhập hơn 30 ngày",

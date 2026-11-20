@@ -1,4 +1,12 @@
 {
+  "user_detail.beta_memberships": "公测参与记录",
+  "user_detail.beta_joined": "加入时间",
+  "user_detail.beta_ends": "公测截止时间",
+  "user_detail.post_beta_mode": "截止后模式",
+  "user_detail.beta_trial": "公测期试用",
+  "user_detail.beta_trial_days": "试用天数",
+  "user_detail.post_beta_free": "免费",
+  "user_detail.post_beta_paid": "收费",
   "filters.client_activity": "客户端活跃度",
   "filters.recent_client_login": "最近 30 天登录",
   "filters.inactive_30_days": "超过 30 天未登录",

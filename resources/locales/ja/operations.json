@@ -1,4 +1,12 @@
 {
+  "user_detail.beta_memberships": "ベータ参加履歴",
+  "user_detail.beta_joined": "参加日時",
+  "user_detail.beta_ends": "ベータ終了日時",
+  "user_detail.post_beta_mode": "終了後のモード",
+  "user_detail.beta_trial": "ベータ期間中の試用",
+  "user_detail.beta_trial_days": "試用日数",
+  "user_detail.post_beta_free": "無料",
+  "user_detail.post_beta_paid": "有料",
   "filters.client_activity": "クライアントの利用状況",
   "filters.recent_client_login": "過去30日以内にログイン",
   "filters.inactive_30_days": "30日以上ログインなし",

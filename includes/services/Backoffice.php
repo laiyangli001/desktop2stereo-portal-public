@@ -138,6 +138,8 @@ final readonly class Backoffice
         $q->execute([$id]);$user['client_activity']=$q->fetchAll();
         $q=$this->db->prepare('SELECT product_code,platform,device_type,os_name,os_version,os_build,gpu_model,android_api_level,device_model,reported_at FROM portal_product_user_environment WHERE user_id=? ORDER BY product_code,platform,device_type');
         $q->execute([$id]);$user['client_environments']=$q->fetchAll();
+        $q=$this->db->prepare('SELECT product_code,beta_revision,enrolled_at,beta_ends_at,trial_enabled_snapshot,trial_days_snapshot,post_beta_mode_snapshot FROM portal_product_beta_members WHERE user_id=? ORDER BY product_code,beta_revision DESC');
+        $q->execute([$id]);$user['beta_memberships']=$q->fetchAll();
         $q=$this->db->prepare('SELECT register_ip,register_time FROM portal_registration_records WHERE user_id=? ORDER BY id LIMIT 1');
         $q->execute([$id]);$registration=$q->fetch();
         $user['registration']=$registration?['time'=>$registration['register_time'],'ip'=>$registration['register_ip'],

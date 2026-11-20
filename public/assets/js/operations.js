@@ -345,6 +345,18 @@
       ], payments));
     }
     const products = new Map(licenses.map(item => [item.product, item.title || item.product]));
+    const betaMemberships = user.beta_memberships || [];
+    if (betaMemberships.length) {
+      detail.append(node('h3', tr('operations.user_detail.beta_memberships'), 'operation-section-title'));
+      detail.append(table([
+        [tr('operations.user_detail.product'), item => products.get(item.product_code) || item.product_code],
+        [tr('operations.user_detail.beta_joined'), item => date(item.enrolled_at)],
+        [tr('operations.user_detail.beta_ends'), item => date(item.beta_ends_at)],
+        [tr('operations.user_detail.post_beta_mode'), item => tr(item.post_beta_mode_snapshot === 'free' ? 'operations.user_detail.post_beta_free' : 'operations.user_detail.post_beta_paid')],
+        [tr('operations.user_detail.beta_trial'), item => item.trial_enabled_snapshot ? tr('operations.status.active') : tr('operations.status.disabled')],
+        [tr('operations.user_detail.beta_trial_days'), item => item.trial_days_snapshot],
+      ], betaMemberships));
+    }
     const activity = user.client_activity || [];
     if (activity.length) {
       detail.append(node('h3', tr('operations.user_detail.client_activity'), 'operation-section-title'));

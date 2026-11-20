@@ -1,4 +1,12 @@
 {
+  "user_detail.beta_memberships": "베타 참여 기록",
+  "user_detail.beta_joined": "참여 시각",
+  "user_detail.beta_ends": "베타 종료 시각",
+  "user_detail.post_beta_mode": "베타 종료 후 모드",
+  "user_detail.beta_trial": "베타 기간 체험판",
+  "user_detail.beta_trial_days": "체험 기간(일)",
+  "user_detail.post_beta_free": "무료",
+  "user_detail.post_beta_paid": "유료",
   "filters.client_activity": "클라이언트 활동",
   "filters.recent_client_login": "최근 30일 내 로그인",
   "filters.inactive_30_days": "30일 넘게 로그인하지 않음",
