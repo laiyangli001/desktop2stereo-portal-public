@@ -16,6 +16,7 @@ if ($operationSection==='articles') $uiNamespaces[]='editor';
 if ($operationSection==='tasks') $uiNamespaces[]='translation_glossary';
 if ($operationSection==='maintenance') $uiNamespaces[]='maintenance';
 if ($operationSection==='upgrade') $uiNamespaces[]='updates';
+if ($operationSection==='product') $uiNamespaces[]='product_releases';
 $legacyDomTranslation=false;
 $heading=d2s_tr($operationTitles[$operationSection]);
 ?>

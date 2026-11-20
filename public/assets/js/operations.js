@@ -847,8 +847,121 @@
         const availability = tr(item.purchases_enabled ? 'commerce.settings.on' : 'commerce.settings.off');
         return stack(prices.join(' · ') || '—', availability);
       }],
-      [tr('operations.render_users.actions'), item => button(tr('operations.load.edit'), () => editProduct(item, locales))],
+      [tr('operations.render_users.actions'), item => {
+        const actions = node('div', null, 'operation-actions');
+        actions.append(button(tr('operations.load.edit'), () => editProduct(item, locales)));
+        actions.append(button(prtr('manage'), () => manageProductReleases(item)));
+        return actions;
+      }],
     ], products));
+  }
+
+  const prtr = (key, params = {}) => window.D2SI18n.tr('product_releases.' + key, params);
+  async function manageProductReleases(product) {
+    showDialog((product.presentation?.title || product.code) + ' · ' + prtr('heading'));
+    const panel = node('section');
+    detail.append(panel);
+    const refresh = async () => {
+      panel.replaceChildren();
+      const data = await request('/products/' + encodeURIComponent(product.code) + '/releases');
+      const hosts = node('section', null, 'admin-panel');
+      hosts.append(node('h3', prtr('allowed_hosts')));
+      const hostForm = node('form', null, 'operation-form');
+      const hostInput = field(hostForm, 'hostname', prtr('hostname'), 'text', '', {required: true, maxLength: 253});
+      const hostSave = node('button', prtr('allow_host'), 'portal-primary'); hostSave.type = 'submit'; hostForm.append(hostSave);
+      hostForm.addEventListener('submit', async event => {
+        event.preventDefault(); if (!hostForm.reportValidity()) return;
+        try { await request('/download-hosts', {hostname: hostInput.value}); await refresh(); }
+        catch (error) { message(error, dialogMessage); }
+      });
+      for (const host of data.download_hosts || []) {
+        const row = node('p', host.hostname + (host.enabled ? '' : ' · ' + prtr('disabled')));
+        if (host.enabled) row.append(button(prtr('disable'), async () => {
+          try { await request('/download-hosts/' + encodeURIComponent(host.hostname) + '/disable', {}); await refresh(); }
+          catch (error) { message(error, dialogMessage); }
+        }));
+        hosts.append(row);
+      }
+      hosts.append(hostForm); panel.append(hosts);
+      const newButton = button(prtr('new_release'), () => editRelease());
+      newButton.className = 'portal-primary'; panel.append(newButton);
+      if (!data.items.length) panel.append(node('p', prtr('empty')));
+      for (const release of data.items) {
+        const card = node('section', null, 'admin-panel');
+        card.append(node('h3', release.platform + ' · ' + release.version_name + ' (' + release.version_code + ')'));
+        card.append(node('p', prtr('status_' + release.status)));
+        if (release.release_notes) card.append(node('p', release.release_notes));
+        for (const file of release.files || []) {
+          const fileCard = node('div', null, 'operation-detail-grid');
+          fileCard.append(node('p', file.architecture + ' · ' + file.file_format + ' · ' + file.file_name));
+          fileCard.append(node('p', 'SHA-256: ' + file.sha256 + ' · ' + file.byte_size + ' B'));
+          for (const channel of file.channels || []) fileCard.append(node('p', channel.channel_name + ' · ' + channel.region_code + ' · ' + channel.download_url + (channel.enabled ? '' : ' · ' + prtr('disabled'))));
+          card.append(fileCard);
+        }
+        if (release.status === 'draft') {
+          card.append(button(prtr('publish'), async () => {
+            try { await request('/products/' + product.code + '/releases/' + release.id + '/publish', {}); await refresh(); }
+            catch (error) { message(error, dialogMessage); }
+          }));
+          card.append(button(prtr('edit_draft'), () => editRelease(release)));
+        } else if (release.status === 'published') card.append(button(prtr('withdraw'), async () => {
+          try { await request('/products/' + product.code + '/releases/' + release.id + '/withdraw', {}); await refresh(); }
+          catch (error) { message(error, dialogMessage); }
+        }));
+        panel.append(card);
+      }
+    };
+    const editRelease = (release = {}) => {
+      showDialog((product.presentation?.title || product.code) + ' · ' + prtr('edit_release'));
+      const files = [];
+      const form = makeForm(async () => {
+        const values = {platform: platform.value, version_code: Number(versionCode.value), version_name: versionName.value,
+          release_notes: notes.value, release_id: release.id || '', files: files.map(file => ({
+            id: file.id || '', architecture: file.architecture.value, file_format: file.format.value,
+            file_name: file.name.value, byte_size: Number(file.size.value), sha256: file.sha.value,
+            android_package_name: file.package.value, android_signing_sha256: file.signing.value,
+            channels: file.channels.map(channel => ({id: channel.id || '', channel_name: channel.name.value,
+              provider: channel.provider.value, region_code: channel.region.value, download_url: channel.url.value,
+              passcode: channel.passcode.value, enabled: channel.enabled.checked, sort_order: Number(channel.order.value)})),
+          }))};
+        await request('/products/' + product.code + '/releases', values);
+        form.dataset.keepOpen = 'true';
+        await manageProductReleases(product);
+      });
+      const platform = field(form, 'platform', prtr('platform'), 'text', release.platform || 'windows', {choices:[['windows','Windows'],['macos','macOS'],['linux','Linux'],['android','Android']], required:true});
+      const versionCode = field(form, 'version_code', prtr('version_code'), 'number', release.version_code || '', {required:true}); versionCode.min = '1'; versionCode.step = '1';
+      const versionName = field(form, 'version_name', prtr('version_name'), 'text', release.version_name || '', {required:true,maxLength:64});
+      const notes = field(form, 'release_notes', prtr('notes'), 'textarea', release.release_notes || '', {wide:true,maxLength:16000,rows:4});
+      const filesWrap = node('section', null, 'wide'); filesWrap.append(node('h3', prtr('files'))); form.append(filesWrap);
+      const addFile = (initial = {}) => {
+        const section = node('section', null, 'admin-panel'); filesWrap.append(section);
+        const f = {id:initial.id,channels:[]};
+        const input = (label,type,value,required=false) => { const wrap=node('label',label); const control=type==='textarea'?node('textarea'):node('input'); if(type!=='textarea')control.type=type; control.value=value??''; control.required=required; wrap.append(control); section.append(wrap); return control; };
+        f.architecture=input(prtr('architecture'),'text',initial.architecture||'x64',true);
+        f.format=input(prtr('format'),'text',initial.file_format||'exe',true);
+        f.name=input(prtr('filename'),'text',initial.file_name||'',true);
+        f.size=input(prtr('byte_size'),'number',initial.byte_size||'',true); f.size.min='1';
+        f.sha=input('SHA-256','text',initial.sha256||'',true); f.sha.pattern='[A-Fa-f0-9]{64}';
+        f.package=input(prtr('android_package'),'text',initial.android_package_name||'');
+        f.signing=input(prtr('android_signing_sha256'),'text',initial.android_signing_sha256||'');
+        const channelWrap=node('div'); channelWrap.append(node('h4',prtr('channels'))); section.append(channelWrap);
+        let cindex=0;
+        const addChannel=(ch={})=>{const row=node('section',null,'operation-detail-grid');channelWrap.append(row);const c={id:ch.id};
+          const ci=(label,type,value)=>{const w=node('label',label);const el=node('input');el.type=type;el.value=value??'';el.required=true;w.append(el);row.append(w);return el;};
+          c.name=ci(prtr('channel_name'),'text',ch.channel_name||'');c.provider=ci(prtr('provider'),'text',ch.provider||'');c.region=ci(prtr('region'),'text',ch.region_code||'*');
+          c.url=ci(prtr('url'),'url',ch.download_url||'');c.passcode=ci(prtr('passcode'),'password','');
+          c.order=ci(prtr('sort_order'),'number',ch.sort_order??cindex++); c.order.min='0';c.enabled=node('input');c.enabled.type='checkbox';c.enabled.checked=ch.enabled??true;row.append(c.enabled,node('span',prtr('enabled')));
+          row.append(button(prtr('remove'),()=>{row.remove();f.channels=f.channels.filter(item=>item!==c);})); f.channels.push(c);};
+        for(const channel of initial.channels||[])addChannel(channel);
+        channelWrap.append(button(prtr('add_channel'),()=>addChannel()));
+        section.append(button(prtr('remove_file'),()=>{section.remove();const i=files.indexOf(f);if(i>=0)files.splice(i,1);}));files.push(f);
+      };
+      for(const file of release.files||[])addFile(file);
+      filesWrap.append(button(prtr('add_file'),()=>addFile()));
+      form.finish(); form.querySelector('footer button').textContent=prtr('save_draft');
+      detail.append(form);
+    };
+    try { await refresh(); } catch (error) { message(error, dialogMessage); }
   }
 
   function editProduct(product, localeItems) {

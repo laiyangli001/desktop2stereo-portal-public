@@ -62,7 +62,13 @@ final readonly class ProductReleaseManager
             unset($file);
         }
         unset($release);
-        return ['items'=>$items,'download_hosts'=>$this->downloadHosts($adminId)['items']];
+        $policyList=[];
+        foreach(self::PLATFORMS as $platform){
+            $policies->execute([$product,$platform]);
+            $policy=$policies->fetch()?:['minimum_supported_version'=>0,'revision'=>1];
+            $policyList[$platform]=['minimum_supported_version'=>(int)$policy['minimum_supported_version'],'revision'=>(int)$policy['revision']];
+        }
+        return ['items'=>$items,'policies'=>$policyList,'download_hosts'=>$this->downloadHosts($adminId)['items']];
     }
 
     public function saveRelease(int $adminId,string $product,array $input,array $context,int $now): array
